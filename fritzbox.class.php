@@ -3,7 +3,7 @@
 	
 File:  
 	Desc     : PHP Classes to Control FRITZ!Box Fon WLAN 7390 
-	Date     : 2015-01-30T13:00:17+01:00
+	Date     : 2015-01-30T13:45:47+01:00
 	Version  : 1.00.45
 	Publisher: (c)2015 Xaver Bauer 
 	Contact  : x.bauer@tier-freunde.net
@@ -34,12 +34,12 @@ class FritzBoxUpnpDevice {
     protected $_SERVICES=null;
     protected $_DEVICES=null;
     protected $_IP='';
-    protected $_PORT=1400;
+    protected $_PORT=49000;
     /***************************************************************************
     /* Funktion : __construct
     /* 
     /*  Benoetigt:
-    /*    @url (string)  Device Url eg. '192.168.1.1:1400'
+    /*    @url (string)  Device Url eg. 'fritz.box:49000'
     /*
     /*  Liefert als Ergebnis: Nichts
     /*
@@ -47,7 +47,7 @@ class FritzBoxUpnpDevice {
     public function __construct($url){
         $p=parse_url($url);
         $this->_IP=(isSet($p['host']))?$p['host']:$url;
-        $this->_PORT=(isSet($p['port']))?$p['port']:1400;
+        $this->_PORT=(isSet($p['port']))?$p['port']:49000;
         $this->_SERVICES=new stdClass();
         $this->_DEVICES=new stdClass();
         $this->_SERVICES->Any=new FritzBoxAny($this);

@@ -1,0 +1,63 @@
+<?
+--------------------------------------------------
+Verwendete Variablen Typen & Anzahl
+   string          : 48
+   ui4             : 18
+   boolean         : 9
+   ui1             : 1
+   ui2             : 8
+   object          : 1
+   int             : 2
+   string|array    : 1
+   string|stringlist|array of strings : 1
+   variant         : 1
+--------------------------------------------------
+Service : WANCommonInterfaceConfig
+--------------------------------------------------
+ GetCommonLinkProperties( ) RETURNS NewWANAccessType(string)=[DSL|POTS|Cable|Ethernet|Other], NewLayer1UpstreamMaxBitRate(ui4), NewLayer1DownstreamMaxBitRate(ui4), NewPhysicalLinkStatus(string)=[Up|Down|Initializing|Unavailable]
+ GetTotalBytesSent( ) RETURNS NewTotalBytesSent(ui4)
+ GetTotalBytesReceived( ) RETURNS NewTotalBytesReceived(ui4)
+ GetTotalPacketsSent( ) RETURNS NewTotalPacketsSent(ui4)
+ GetTotalPacketsReceived( ) RETURNS NewTotalPacketsReceived(ui4)
+ GetAddonInfos( ) RETURNS NewByteSendRate(ui4), NewByteReceiveRate(ui4), NewPacketSendRate(ui4), NewPacketReceiveRate(ui4), NewTotalBytesSent(ui4), NewTotalBytesReceived(ui4), NewAutoDisconnectTime(ui4), NewIdleDisconnectTime(ui4), NewDNSServer1(string), NewDNSServer2(string), NewVoipDNSServer1(string), NewVoipDNSServer2(string), NewUpnpControlEnabled(boolean), NewRoutedBridgedModeBoth(ui1)
+--------------------------------------------------
+Service : WANDSLLinkConfig
+--------------------------------------------------
+ SetDSLLinkType( NewLinkType(string)=[EoA|IPoA|CIP|PPPoA|PPPoE|Unconfigured])
+ GetDSLLinkInfo( ) RETURNS NewLinkType(string)=[EoA|IPoA|CIP|PPPoA|PPPoE|Unconfigured], NewLinkStatus(string)=[Up|Down|Initializing|Unavailable]
+ GetAutoConfig( ) RETURNS NewAutoConfig(boolean)
+ GetModulationType( ) RETURNS NewModulationType(string)=[ADSL G.lite|G.shdsl|IDSL|HDSL|SDSL|VDSL]
+ SetDestinationAddress( NewDestinationAddress(string))
+ GetDestinationAddress( ) RETURNS NewDestinationAddress(string)
+ SetATMEncapsulation( NewATMEncapsulation(string)=[LLC|VCMUX])
+ GetATMEncapsulation( ) RETURNS NewATMEncapsulation(string)=[LLC|VCMUX]
+ SetFCSPreserved( NewFCSPreserved(boolean))
+ GetFCSPreserved( ) RETURNS NewFCSPreserved(boolean)
+--------------------------------------------------
+Service : WANIPConnection
+--------------------------------------------------
+ SetConnectionType( NewConnectionType(string))
+ GetConnectionTypeInfo( ) RETURNS NewConnectionType(string), NewPossibleConnectionTypes(string)=[Unconfigured|IP_Routed|IP_Bridged]
+ RequestConnection( )
+ ForceTermination( )
+ GetStatusInfo( ) RETURNS NewConnectionStatus(string)=[Unconfigured|Connecting|Authenticating|PendingDisconnect|Disconnecting|Disconnected|Connected], NewLastConnectionError(string)=[ERROR_NONE|ERROR_ISP_TIME_OUT|ERROR_COMMAND_ABORTED|ERROR_NOT_ENABLED_FOR_INTERNET|ERROR_BAD_PHONE_NUMBER|ERROR_USER_DISCONNECT|ERROR_ISP_DISCONNECT|ERROR_IDLE_DISCONNECT|ERROR_FORCED_DISCONNECT|ERROR_SERVER_OUT_OF_RESOURCES|ERROR_RESTRICTED_LOGON_HOURS|ERROR_ACCOUNT_DISABLED|ERROR_ACCOUNT_EXPIRED|ERROR_PASSWORD_EXPIRED|ERROR_AUTHENTICATION_FAILURE|ERROR_NO_DIALTONE|ERROR_NO_CARRIER|ERROR_NO_ANSWER|ERROR_LINE_BUSY|ERROR_UNSUPPORTED_BITSPERSECOND|ERROR_TOO_MANY_LINE_ERRORS|ERROR_IP_CONFIGURATION|ERROR_UNKNOWN], NewUptime(ui4)
+ GetNATRSIPStatus( ) RETURNS NewRSIPAvailable(boolean), NewNATEnabled(boolean)
+ GetGenericPortMappingEntry( NewPortMappingIndex(ui2)) RETURNS NewRemoteHost(string), NewExternalPort(ui2), NewProtocol(string)=[TCP|UDP], NewInternalPort(ui2), NewInternalClient(string), NewEnabled(boolean), NewPortMappingDescription(string), NewLeaseDuration(ui4)
+ GetSpecificPortMappingEntry( NewRemoteHost(string), NewExternalPort(ui2), NewProtocol(string)=[TCP|UDP]) RETURNS NewInternalPort(ui2), NewInternalClient(string), NewEnabled(boolean), NewPortMappingDescription(string), NewLeaseDuration(ui4)
+ AddPortMapping( NewRemoteHost(string), NewExternalPort(ui2), NewProtocol(string)=[TCP|UDP], NewInternalPort(ui2), NewInternalClient(string), NewEnabled(boolean), NewPortMappingDescription(string), NewLeaseDuration(ui4))
+ DeletePortMapping( NewRemoteHost(string), NewExternalPort(ui2), NewProtocol(string)=[TCP|UDP])
+ GetExternalIPAddress( ) RETURNS NewExternalIPAddress(string)
+--------------------------------------------------
+Service : FritzBoxUpnpClass
+--------------------------------------------------
+ __construct( BASE(object), SERVICE(string), SERVICEURL(string), EVENTURL(string))
+ RegisterEventCallback( callback_url(string), timeout(int)=3600) RETURNS SID(string), TIMEOUT(int), Server(string)
+ UnRegisterEventCallback( SID(string))
+--------------------------------------------------
+Service : FritzBoxUpnpDevice
+--------------------------------------------------
+ __construct( url(string))
+ Upnp( url(string), SOAP_service(string), SOAP_action(string), SOAP_arguments(string), XML_filter(string)) RETURNS result(string|array)
+ Filter( subject(string), pattern(string|stringlist|array of strings)) RETURNS result(variant)
+
+?>
