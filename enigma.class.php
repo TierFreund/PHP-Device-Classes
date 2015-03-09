@@ -1,8 +1,9 @@
 <?
-$c=new EnigmaUpnpDevice('192.168.112.65');
+/* Demo
+$c=new EnigmaUpnpDevice('192.168.1.xxx');
 $r=$c->GetServices();
-dumpvar($r);
-
+print_r($r);
+*/
 
 class EnigmaUpnpDevice {
 
