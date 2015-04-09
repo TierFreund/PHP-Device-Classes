@@ -1,0 +1,249 @@
+<?
+--------------------------------------------------
+Verwendete Variablen Typen & Anzahl
+   string          : 298
+   i4              : 14
+   boolean         : 43
+   ui4             : 186
+   ui2             : 15
+   i2              : 13
+   object          : 1
+   int             : 2
+   string|array    : 1
+   string|stringlist|array of strings : 1
+   variant         : 1
+--------------------------------------------------
+Service : AlarmClock
+--------------------------------------------------
+ SetFormat( DesiredTimeFormat(string), DesiredDateFormat(string))
+ GetFormat( ) RETURNS CurrentTimeFormat(string), CurrentDateFormat(string)
+ SetTimeZone( Index(i4), AutoAdjustDst(boolean))
+ GetTimeZone( ) RETURNS Index(i4), AutoAdjustDst(boolean)
+ GetTimeZoneAndRule( ) RETURNS Index(i4), AutoAdjustDst(boolean), CurrentTimeZone(string)
+ GetTimeZoneRule( Index(i4)) RETURNS TimeZone(string)
+ SetTimeServer( DesiredTimeServer(string))
+ GetTimeServer( ) RETURNS CurrentTimeServer(string)
+ SetTimeNow( DesiredTime(string), TimeZoneForDesiredTime(string))
+ GetHouseholdTimeAtStamp( TimeStamp(string)) RETURNS HouseholdUTCTime(string)
+ GetTimeNow( ) RETURNS CurrentUTCTime(string), CurrentLocalTime(string), CurrentTimeZone(string), CurrentTimeGeneration(ui4)
+ CreateAlarm( StartLocalTime(string), Duration(string), Recurrence(string)=[ONCE|WEEKDAYS|WEEKENDS|DAILY], Enabled(boolean), RoomUUID(string), ProgramURI(string), ProgramMetaData(string), PlayMode(string)=[NORMAL|REPEAT_ALL|SHUFFLE_NOREPEAT|SHUFFLE], Volume(ui2), IncludeLinkedZones(boolean)) RETURNS AssignedID(ui4)
+ UpdateAlarm( ID(ui4), StartLocalTime(string), Duration(string), Recurrence(string)=[ONCE|WEEKDAYS|WEEKENDS|DAILY], Enabled(boolean), RoomUUID(string), ProgramURI(string), ProgramMetaData(string), PlayMode(string)=[NORMAL|REPEAT_ALL|SHUFFLE_NOREPEAT|SHUFFLE], Volume(ui2), IncludeLinkedZones(boolean))
+ DestroyAlarm( ID(ui4))
+ ListAlarms( ) RETURNS CurrentAlarmList(string), CurrentAlarmListVersion(string)
+ SetDailyIndexRefreshTime( DesiredDailyIndexRefreshTime(string))
+ GetDailyIndexRefreshTime( ) RETURNS CurrentDailyIndexRefreshTime(string)
+--------------------------------------------------
+Service : MusicServices
+--------------------------------------------------
+ GetSessionId( ServiceId(i2), Username(string)) RETURNS SessionId(string)
+ ListAvailableServices( ) RETURNS AvailableServiceDescriptorList(string), AvailableServiceTypeList(string), AvailableServiceListVersion(string)
+ UpdateAvailableServices( )
+--------------------------------------------------
+Service : DeviceProperties
+--------------------------------------------------
+ SetLEDState( DesiredLEDState(string)=[On|Off])
+ GetLEDState( ) RETURNS CurrentLEDState(string)=[On|Off]
+ AddBondedZones( ChannelMapSet(string))
+ RemoveBondedZones( ChannelMapSet(string))
+ CreateStereoPair( ChannelMapSet(string))
+ SeparateStereoPair( ChannelMapSet(string))
+ SetZoneAttributes( DesiredZoneName(string), DesiredIcon(string), DesiredConfiguration(string))
+ GetZoneAttributes( ) RETURNS CurrentZoneName(string), CurrentIcon(string), CurrentConfiguration(string)
+ GetHouseholdID( ) RETURNS CurrentHouseholdID(string)
+ GetZoneInfo( ) RETURNS SerialNumber(string), SoftwareVersion(string), DisplaySoftwareVersion(string), HardwareVersion(string), IPAddress(string), MACAddress(string), CopyrightInfo(string), ExtraInfo(string), HTAudioIn(ui4)
+ SetAutoplayLinkedZones( IncludeLinkedZones(boolean))
+ GetAutoplayLinkedZones( ) RETURNS IncludeLinkedZones(boolean)
+ SetAutoplayRoomUUID( RoomUUID(string))
+ GetAutoplayRoomUUID( ) RETURNS RoomUUID(string)
+ SetAutoplayVolume( Volume(ui2))
+ GetAutoplayVolume( ) RETURNS CurrentVolume(ui2)
+ ImportSetting( SettingID(ui4), SettingURI(string))
+ SetUseAutoplayVolume( UseVolume(boolean))
+ GetUseAutoplayVolume( ) RETURNS UseVolume(boolean)
+ AddHTSatellite( HTSatChanMapSet(string))
+ RemoveHTSatellite( SatRoomUUID(string))
+--------------------------------------------------
+Service : SystemProperties
+--------------------------------------------------
+ SetString( VariableName(string), StringValue(string))
+ SetStringX( VariableName(string), StringValue(string))
+ GetString( VariableName(string)) RETURNS StringValue(string)
+ GetStringX( VariableName(string)) RETURNS StringValue(string)
+ Remove( VariableName(string))
+ RemoveX( VariableName(string))
+ GetWebCode( AccountType(ui4)) RETURNS WebCode(string)
+ ProvisionTrialAccount( AccountType(ui4)) RETURNS AccountUDN(string)
+ ProvisionCredentialedTrialAccountX( AccountType(ui4), AccountID(string), AccountPassword(string)) RETURNS IsExpired(boolean), AccountUDN(string)
+ MigrateTrialAccountX( TargetAccountType(ui4), TargetAccountID(string), TargetAccountPassword(string))
+ AddAccountX( AccountType(ui4), AccountID(string), AccountPassword(string)) RETURNS AccountUDN(string)
+ AddAccountWithCredentialsX( AccountType(ui4), AccountToken(string), AccountKey(string))
+ AddOAuthAccountX( AccountType(ui4), AccountToken(string), AccountKey(string), OAuthDeviceID(string)) RETURNS AccountUDN(string)
+ RemoveAccount( AccountType(ui4), AccountID(string))
+ EditAccountPasswordX( AccountType(ui4), AccountID(string), NewAccountPassword(string))
+ SetAccountNicknameX( AccountUDN(string), AccountNickname(string))
+ RefreshAccountCredentialsX( AccountType(ui4), AccountUID(ui4), AccountToken(string), AccountKey(string))
+ EditAccountMd( AccountType(ui4), AccountID(string), NewAccountMd(string))
+ DoPostUpdateTasks( )
+ ResetThirdPartyCredentials( )
+ EnableRDM( RDMValue(boolean))
+ GetRDM( ) RETURNS RDMValue(boolean)
+ ReplaceAccountX( AccountUDN(string), NewAccountID(string), NewAccountPassword(string)) RETURNS NewAccountUDN(string)
+--------------------------------------------------
+Service : ZoneGroupTopology
+--------------------------------------------------
+ CheckForUpdate( UpdateType(string)=[All|Software], CachedOnly(boolean), Version(string)) RETURNS UpdateItem(string)
+ BeginSoftwareUpdate( UpdateURL(string), Flags(ui4), ExtraOptions(string))
+ ReportUnresponsiveDevice( DeviceUUID(string), DesiredAction(string)=[Remove|VerifyThenRemoveSystemwide])
+ ReportAlarmStartedRunning( )
+ SubmitDiagnostics( IncludeControllers(boolean), Type(string)=[Healthcheck|Server|User]) RETURNS DiagnosticID(ui4)
+ RegisterMobileDevice( MobileDeviceName(string), MobileDeviceUDN(string), MobileIPAndPort(string))
+ GetZoneGroupAttributes( ) RETURNS CurrentZoneGroupName(string), CurrentZoneGroupID(string), CurrentZonePlayerUUIDsInGroup(string)
+ GetZoneGroupState( ) RETURNS ZoneGroupState(string)
+--------------------------------------------------
+Service : GroupManagement
+--------------------------------------------------
+ AddMember( MemberID(string)) RETURNS CurrentTransportSettings(string), GroupUUIDJoined(string), ResetVolumeAfter(boolean), VolumeAVTransportURI(string)
+ RemoveMember( MemberID(string))
+ ReportTrackBufferingResult( MemberID(string), ResultCode(i4))
+--------------------------------------------------
+Service : QPlay
+--------------------------------------------------
+ QPlayAuth( Seed(string)) RETURNS Code(string), MID(string), DID(string)
+--------------------------------------------------
+Service : ContentDirectory
+--------------------------------------------------
+ GetSearchCapabilities( ) RETURNS SearchCaps(string)
+ GetSortCapabilities( ) RETURNS SortCaps(string)
+ GetSystemUpdateID( ) RETURNS Id(ui4)
+ GetAlbumArtistDisplayOption( ) RETURNS AlbumArtistDisplayOption(string)
+ GetLastIndexChange( ) RETURNS LastIndexChange(string)
+ Browse( ObjectID(string), BrowseFlag(string)=[BrowseMetadata|BrowseDirectChildren], Filter(string), StartingIndex(ui4), RequestedCount(ui4), SortCriteria(string)) RETURNS Result(string), NumberReturned(ui4), TotalMatches(ui4), UpdateID(ui4)
+ FindPrefix( ObjectID(string), Prefix(string)) RETURNS StartingIndex(ui4), UpdateID(ui4)
+ GetAllPrefixLocations( ObjectID(string)) RETURNS TotalPrefixes(ui4), PrefixAndIndexCSV(string), UpdateID(ui4)
+ CreateObject( ContainerID(string), Elements(string)) RETURNS ObjectID(string), Result(string)
+ UpdateObject( ObjectID(string), CurrentTagValue(string), NewTagValue(string))
+ DestroyObject( ObjectID(string))
+ RefreshShareList( )
+ RefreshShareIndex( AlbumArtistDisplayOption(string))
+ RequestResort( SortOrder(string))
+ GetShareIndexInProgress( ) RETURNS IsIndexing(boolean)
+ GetBrowseable( ) RETURNS IsBrowseable(boolean)
+ SetBrowseable( Browseable(boolean))
+--------------------------------------------------
+Service : ConnectionManager
+--------------------------------------------------
+ GetProtocolInfo( ) RETURNS Source(string), Sink(string)
+ GetCurrentConnectionIDs( ) RETURNS ConnectionIDs(string)
+ GetCurrentConnectionInfo( ConnectionID(i4)) RETURNS RcsID(i4), AVTransportID(i4), ProtocolInfo(string), PeerConnectionManager(string), PeerConnectionID(i4), Direction(string)=[Input|Output], Status(string)=[OK|ContentFormatMismatch|InsufficientBandwidth|UnreliableChannel|Unknown]
+--------------------------------------------------
+Service : RenderingControl
+--------------------------------------------------
+ GetMute( InstanceID(ui4), Channel(string)=[Master|LF|RF|SpeakerOnly]) RETURNS CurrentMute(boolean)
+ SetMute( InstanceID(ui4), Channel(string)=[Master|LF|RF|SpeakerOnly], DesiredMute(boolean))
+ ResetBasicEQ( InstanceID(ui4)) RETURNS Bass(i2), Treble(i2), Loudness(boolean), LeftVolume(ui2), RightVolume(ui2)
+ ResetExtEQ( InstanceID(ui4), EQType(string))
+ GetVolume( InstanceID(ui4), Channel(string)=[Master|LF|RF]) RETURNS CurrentVolume(ui2)
+ SetVolume( InstanceID(ui4), Channel(string)=[Master|LF|RF], DesiredVolume(ui2))
+ SetRelativeVolume( InstanceID(ui4), Channel(string)=[Master|LF|RF], Adjustment(i4)) RETURNS NewVolume(ui2)
+ GetVolumeDB( InstanceID(ui4), Channel(string)=[Master|LF|RF]) RETURNS CurrentVolume(i2)
+ SetVolumeDB( InstanceID(ui4), Channel(string)=[Master|LF|RF], DesiredVolume(i2))
+ GetVolumeDBRange( InstanceID(ui4), Channel(string)=[Master|LF|RF]) RETURNS MinValue(i2), MaxValue(i2)
+ GetBass( InstanceID(ui4)) RETURNS CurrentBass(i2)
+ SetBass( InstanceID(ui4), DesiredBass(i2))
+ GetTreble( InstanceID(ui4)) RETURNS CurrentTreble(i2)
+ SetTreble( InstanceID(ui4), DesiredTreble(i2))
+ GetEQ( InstanceID(ui4), EQType(string)) RETURNS CurrentValue(i2)
+ SetEQ( InstanceID(ui4), EQType(string), DesiredValue(i2))
+ GetLoudness( InstanceID(ui4), Channel(string)=[Master|LF|RF]) RETURNS CurrentLoudness(boolean)
+ SetLoudness( InstanceID(ui4), Channel(string)=[Master|LF|RF], DesiredLoudness(boolean))
+ GetSupportsOutputFixed( InstanceID(ui4)) RETURNS CurrentSupportsFixed(boolean)
+ GetOutputFixed( InstanceID(ui4)) RETURNS CurrentFixed(boolean)
+ SetOutputFixed( InstanceID(ui4), DesiredFixed(boolean))
+ GetHeadphoneConnected( InstanceID(ui4)) RETURNS CurrentHeadphoneConnected(boolean)
+ RampToVolume( InstanceID(ui4), Channel(string)=[Master|LF|RF], RampType(string)=[SLEEP_TIMER_RAMP_TYPE|ALARM_RAMP_TYPE|AUTOPLAY_RAMP_TYPE], DesiredVolume(ui2), ResetVolumeAfter(boolean), ProgramURI(string)) RETURNS RampTime(ui4)
+ RestoreVolumePriorToRamp( InstanceID(ui4), Channel(string)=[Master|LF|RF])
+ SetChannelMap( InstanceID(ui4), ChannelMap(string))
+--------------------------------------------------
+Service : AVTransport
+--------------------------------------------------
+ SetAVTransportURI( InstanceID(ui4), CurrentURI(string), CurrentURIMetaData(string))
+ SetNextAVTransportURI( InstanceID(ui4), NextURI(string), NextURIMetaData(string))
+ AddURIToQueue( InstanceID(ui4), EnqueuedURI(string), EnqueuedURIMetaData(string), DesiredFirstTrackNumberEnqueued(ui4), EnqueueAsNext(boolean)) RETURNS FirstTrackNumberEnqueued(ui4), NumTracksAdded(ui4), NewQueueLength(ui4)
+ AddMultipleURIsToQueue( InstanceID(ui4), UpdateID(ui4), NumberOfURIs(ui4), EnqueuedURIs(string), EnqueuedURIsMetaData(string), ContainerURI(string), ContainerMetaData(string), DesiredFirstTrackNumberEnqueued(ui4), EnqueueAsNext(boolean)) RETURNS FirstTrackNumberEnqueued(ui4), NumTracksAdded(ui4), NewQueueLength(ui4), NewUpdateID(ui4)
+ ReorderTracksInQueue( InstanceID(ui4), StartingIndex(ui4), NumberOfTracks(ui4), InsertBefore(ui4), UpdateID(ui4))
+ RemoveTrackFromQueue( InstanceID(ui4), ObjectID(string), UpdateID(ui4))
+ RemoveTrackRangeFromQueue( InstanceID(ui4), UpdateID(ui4), StartingIndex(ui4), NumberOfTracks(ui4)) RETURNS NewUpdateID(ui4)
+ RemoveAllTracksFromQueue( InstanceID(ui4))
+ SaveQueue( InstanceID(ui4), Title(string), ObjectID(string)) RETURNS AssignedObjectID(string)
+ BackupQueue( InstanceID(ui4))
+ CreateSavedQueue( InstanceID(ui4), Title(string), EnqueuedURI(string), EnqueuedURIMetaData(string)) RETURNS NumTracksAdded(ui4), NewQueueLength(ui4), AssignedObjectID(string), NewUpdateID(ui4)
+ AddURIToSavedQueue( InstanceID(ui4), ObjectID(string), UpdateID(ui4), EnqueuedURI(string), EnqueuedURIMetaData(string), AddAtIndex(ui4)) RETURNS NumTracksAdded(ui4), NewQueueLength(ui4), NewUpdateID(ui4)
+ ReorderTracksInSavedQueue( InstanceID(ui4), ObjectID(string), UpdateID(ui4), TrackList(string), NewPositionList(string)) RETURNS QueueLengthChange(i4), NewQueueLength(ui4), NewUpdateID(ui4)
+ GetMediaInfo( InstanceID(ui4)) RETURNS NrTracks(ui4), MediaDuration(string), CurrentURI(string), CurrentURIMetaData(string), NextURI(string), NextURIMetaData(string), PlayMedium(string)=[NONE|NETWORK], RecordMedium(string)=[NONE], WriteStatus(string)
+ GetTransportInfo( InstanceID(ui4)) RETURNS CurrentTransportState(string)=[STOPPED|PLAYING|PAUSED_PLAYBACK|TRANSITIONING], CurrentTransportStatus(string), CurrentSpeed(string)=[1]
+ GetPositionInfo( InstanceID(ui4)) RETURNS Track(ui4), TrackDuration(string), TrackMetaData(string), TrackURI(string), RelTime(string), AbsTime(string), RelCount(i4), AbsCount(i4)
+ GetDeviceCapabilities( InstanceID(ui4)) RETURNS PlayMedia(string), RecMedia(string), RecQualityModes(string)
+ GetTransportSettings( InstanceID(ui4)) RETURNS PlayMode(string)=[NORMAL|REPEAT_ALL|SHUFFLE_NOREPEAT|SHUFFLE], RecQualityMode(string)
+ GetCrossfadeMode( InstanceID(ui4)) RETURNS CrossfadeMode(boolean)
+ Stop( InstanceID(ui4))
+ Play( InstanceID(ui4), Speed(string)=[1])
+ Pause( InstanceID(ui4))
+ Seek( InstanceID(ui4), Unit(string)=[TRACK_NR|REL_TIME|SECTION], Target(string))
+ Next( InstanceID(ui4))
+ NextProgrammedRadioTracks( InstanceID(ui4))
+ Previous( InstanceID(ui4))
+ NextSection( InstanceID(ui4))
+ PreviousSection( InstanceID(ui4))
+ SetPlayMode( InstanceID(ui4), NewPlayMode(string)=[NORMAL|REPEAT_ALL|SHUFFLE_NOREPEAT|SHUFFLE])
+ SetCrossfadeMode( InstanceID(ui4), CrossfadeMode(boolean))
+ NotifyDeletedURI( InstanceID(ui4), DeletedURI(string))
+ GetCurrentTransportActions( InstanceID(ui4)) RETURNS Actions(string)
+ BecomeCoordinatorOfStandaloneGroup( InstanceID(ui4))
+ DelegateGroupCoordinationTo( InstanceID(ui4), NewCoordinator(string), RejoinGroup(boolean))
+ BecomeGroupCoordinator( InstanceID(ui4), CurrentCoordinator(string), CurrentGroupID(string), OtherMembers(string), TransportSettings(string), CurrentURI(string), CurrentURIMetaData(string), SleepTimerState(string), AlarmState(string), StreamRestartState(string), CurrentQueueTrackList(string))
+ BecomeGroupCoordinatorAndSource( InstanceID(ui4), CurrentCoordinator(string), CurrentGroupID(string), OtherMembers(string), CurrentURI(string), CurrentURIMetaData(string), SleepTimerState(string), AlarmState(string), StreamRestartState(string), CurrentAVTTrackList(string), CurrentQueueTrackList(string), CurrentSourceState(string), ResumePlayback(boolean))
+ ChangeCoordinator( InstanceID(ui4), CurrentCoordinator(string), NewCoordinator(string), NewTransportSettings(string))
+ ChangeTransportSettings( InstanceID(ui4), NewTransportSettings(string), CurrentAVTransportURI(string))
+ ConfigureSleepTimer( InstanceID(ui4), NewSleepTimerDuration(string))
+ GetRemainingSleepTimerDuration( InstanceID(ui4)) RETURNS RemainingSleepTimerDuration(string), CurrentSleepTimerGeneration(ui4)
+ RunAlarm( InstanceID(ui4), AlarmID(ui4), LoggedStartTime(string), Duration(string), ProgramURI(string), ProgramMetaData(string), PlayMode(string)=[NORMAL|REPEAT_ALL|SHUFFLE_NOREPEAT|SHUFFLE], Volume(ui2), IncludeLinkedZones(boolean))
+ StartAutoplay( InstanceID(ui4), ProgramURI(string), ProgramMetaData(string), Volume(ui2), IncludeLinkedZones(boolean), ResetVolumeAfter(boolean))
+ GetRunningAlarmProperties( InstanceID(ui4)) RETURNS AlarmID(ui4), GroupID(string), LoggedStartTime(string)
+ SnoozeAlarm( InstanceID(ui4), Duration(string))
+--------------------------------------------------
+Service : Queue
+--------------------------------------------------
+ AddURI( QueueID(ui4), UpdateID(ui4), EnqueuedURI(string), EnqueuedURIMetaData(string), DesiredFirstTrackNumberEnqueued(ui4), EnqueueAsNext(boolean)) RETURNS FirstTrackNumberEnqueued(ui4), NumTracksAdded(ui4), NewQueueLength(ui4), NewUpdateID(ui4)
+ AddMultipleURIs( QueueID(ui4), UpdateID(ui4), ContainerURI(string), ContainerMetaData(string), DesiredFirstTrackNumberEnqueued(ui4), EnqueueAsNext(boolean), NumberOfURIs(ui4), EnqueuedURIsAndMetaData(string)) RETURNS FirstTrackNumberEnqueued(ui4), NumTracksAdded(ui4), NewQueueLength(ui4), NewUpdateID(ui4)
+ AttachQueue( QueueOwnerID(string)) RETURNS QueueID(ui4), QueueOwnerContext(string)
+ Backup( )
+ Browse( QueueID(ui4), StartingIndex(ui4), RequestedCount(ui4)) RETURNS Result(string), NumberReturned(ui4), TotalMatches(ui4), UpdateID(ui4)
+ CreateQueue( QueueOwnerID(string), QueueOwnerContext(string), QueuePolicy(string)) RETURNS QueueID(ui4)
+ RemoveAllTracks( QueueID(ui4), UpdateID(ui4)) RETURNS NewUpdateID(ui4)
+ RemoveTrackRange( QueueID(ui4), UpdateID(ui4), StartingIndex(ui4), NumberOfTracks(ui4)) RETURNS NewUpdateID(ui4)
+ ReorderTracks( QueueID(ui4), StartingIndex(ui4), NumberOfTracks(ui4), InsertBefore(ui4), UpdateID(ui4)) RETURNS NewUpdateID(ui4)
+ ReplaceAllTracks( QueueID(ui4), UpdateID(ui4), ContainerURI(string), ContainerMetaData(string), CurrentTrackIndex(ui4), NewCurrentTrackIndices(string), NumberOfURIs(ui4), EnqueuedURIsAndMetaData(string)) RETURNS NewQueueLength(ui4), NewUpdateID(ui4)
+ SaveAsSonosPlaylist( QueueID(ui4), Title(string), ObjectID(string)) RETURNS AssignedObjectID(string)
+--------------------------------------------------
+Service : GroupRenderingControl
+--------------------------------------------------
+ GetGroupMute( InstanceID(ui4)) RETURNS CurrentMute(boolean)
+ SetGroupMute( InstanceID(ui4), DesiredMute(boolean))
+ GetGroupVolume( InstanceID(ui4)) RETURNS CurrentVolume(ui2)
+ SetGroupVolume( InstanceID(ui4), DesiredVolume(ui2))
+ SetRelativeGroupVolume( InstanceID(ui4), Adjustment(i4)) RETURNS NewVolume(ui2)
+ SnapshotGroupVolume( InstanceID(ui4))
+--------------------------------------------------
+Service : SonosUpnpClass
+--------------------------------------------------
+ __construct( BASE(object), SERVICE(string), SERVICEURL(string), EVENTURL(string))
+ RegisterEventCallback( callback_url(string), timeout(int)=3600) RETURNS SID(string), TIMEOUT(int), Server(string)
+ UnRegisterEventCallback( SID(string))
+--------------------------------------------------
+Service : SonosXmlRpcDevice
+--------------------------------------------------
+ __construct( url(string))
+ Upnp( url(string), SOAP_service(string), SOAP_action(string), SOAP_arguments(string), XML_filter(string)) RETURNS result(string|array)
+ Filter( subject(string), pattern(string|stringlist|array of strings)) RETURNS result(variant)
+
+?>

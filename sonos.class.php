@@ -1,27 +1,17 @@
 <?
-/*---------------------------------------------------------------------------/
-	
-File:  
-	Desc     : PHP Classes to Control Sonos PLAY:1 
-	Date     : 2015-01-29T14:35:32+01:00
-	Version  : 1.00.45
-	Publisher: (c)2015 Xaver Bauer 
-	Contact  : x.bauer@tier-freunde.net
+//---------------------------------------------------------------------------/
+//	
+//  
+//	Desc     : PHP Classes to Control Sonos PLAY:1 
+//	Date     : 2015-04-10T01:08:57+02:00
+//	Version  : 1.00.45
+//	Publisher: (c)2015 Xaver Bauer 
+//	Contact  : x.bauer@tier-freunde.net
+//
+//--------------------------------------------------------------------------/
 
-Device:
-	Device Type  : urn:schemas-upnp-org:device:ZonePlayer:1
-	URL 		 : http://192.168.xxx.xxx:1400/xml/device_description.xml	
-	Friendly Name: 192.168.xxx.xxx - Sonos PLAY:1
-	Manufacturer : Sonos, Inc.
-	URL 		 : http://www.sonos.com
-	Model        : Sonos PLAY:1
-	Name 		 : Sonos PLAY:1
-	Number 		 : S1
-	URL 		 : http://www.sonos.com/products/zoneplayers/S1
-
-/*--------------------------------------------------------------------------*/
 /*##########################################################################/
-/*  Class  : SonosUpnpDevice 
+/*  Class  : SonosXmlRpcDevice 
 /*  Desc   : Master Class to Controll Device 
 /*	Vars   :
 /*  protected _SERVICES  : (object) Holder for all Service Classes
@@ -29,7 +19,7 @@ Device:
 /*  protected _IP        : (string) IP Adress from Device
 /*  protected _PORT      : (int)    Port from Device
 /*##########################################################################*/
-class SonosUpnpDevice {
+class SonosXmlRpcDevice {
     protected $_SERVICES=null;
     protected $_DEVICES=null;
     protected $_IP='';
@@ -38,7 +28,7 @@ class SonosUpnpDevice {
     /* Funktion : __construct
     /* 
     /*  Benoetigt:
-    /*    @url (string)  Device Url eg. '192.168.1.1:1400'
+    /*    @url (string)  Device Url eg. '192.168.112.56:1400'
     /*
     /*  Liefert als Ergebnis: Nichts
     /*
@@ -78,7 +68,7 @@ class SonosUpnpDevice {
     /****************************************************************************/
     function GetIcon($id) {
         switch($id){
-            case 0 : return array('width'=>48,'height'=>48,'url'=>'http://192.168.112.56:1400/img/icon-S1.png');break;
+            case 0 : return array('width'=>48,'height'=>48,'url'=>$this->GetBaseUrl().'/img/icon-S1.png');break;
         }
         return array('width'=>0,'height'=>0,'url'=>'');
     }
@@ -106,7 +96,7 @@ class SonosUpnpDevice {
     /*    @result (string|array) => The XML Soap Result
     /*
     /****************************************************************************/
-    public function Upnp($url,$SOAP_service,$SOAP_action,$SOAP_arguments = '',$XML_filter = ''){
+    public function Upnp($url,$SOAP_service,$SOAP_action,$SOAP_arguments = '',$XML_filter = '', $ReturnValue=true){
         $POST_xml = '<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">';
         $POST_xml .= '<s:Body>';
         $POST_xml .= '<u:'.$SOAP_action.' xmlns:u="'.$SOAP_service.'">';
@@ -130,7 +120,7 @@ class SonosUpnpDevice {
         if ($XML_filter != '')
             return $this->Filter($r,$XML_filter);
         else
-            return $r;
+            return $r===false?null:$ReturnValue;
     }
     /***************************************************************************
     /* Funktion : Filter
@@ -242,21 +232,21 @@ class SonosUpnpDevice {
     /*
     /****************************************************************************/
     public function __call($FunctionName, $arguments){
-        if(!$p=$this->_ServiceObjectByFunctionName($FunctionName))
+        if(!$p=$this->FunctionExist($FunctionName))
             throw new Exception('Unbekannte Funktion '.$FunctionName.' !!!');
         return $this->CallService($p,$FunctionName, $arguments);
     }
     /***************************************************************************
-    /* Funktion : _ServiceObjectByFunctionName
+    /* Funktion : FunctionExist
     /* 
     /*  Benoetigt:
     /*    @FunctionName (string)
     /*
     /*  Liefert als Ergebnis:
-    /*    @result (function||null) ServiceObject mit der gusuchten Function
+    /*    @result (object||false) ServiceObject mit der gesuchten Funktion
     /*
     /****************************************************************************/
-    private function _ServiceObjectByFunctionName($FunctionName){
+    public function FunctionExist($FunctionName){
         foreach($this->_SERVICES as $fn=>$tmp)if(method_exists($this->_SERVICES->$fn,$FunctionName)){return $this->_SERVICES->$fn;}
         foreach($this->_DEVICES as $fn=>$tmp)if(method_exists($this->_DEVICES->$fn,$FunctionName)){return $this->_DEVICES->$fn;}
         return false;
@@ -383,7 +373,7 @@ class SonosAlarmClock extends SonosUpnpClass {
     public function SetFormat($DesiredTimeFormat, $DesiredDateFormat){
         $args="<DesiredTimeFormat>$DesiredTimeFormat</DesiredTimeFormat><DesiredDateFormat>$DesiredDateFormat</DesiredDateFormat>";
         $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetFormat',$args,$filter);
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetFormat',$args,$filter,$DesiredTimeFormat);
     }
     /***************************************************************************
     /* Funktion : GetFormat
@@ -413,7 +403,7 @@ class SonosAlarmClock extends SonosUpnpClass {
     public function SetTimeZone($Index, $AutoAdjustDst){
         $args="<Index>$Index</Index><AutoAdjustDst>$AutoAdjustDst</AutoAdjustDst>";
         $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetTimeZone',$args,$filter);
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetTimeZone',$args,$filter,$Index);
     }
     /***************************************************************************
     /* Funktion : GetTimeZone
@@ -473,7 +463,7 @@ class SonosAlarmClock extends SonosUpnpClass {
     public function SetTimeServer($DesiredTimeServer){
         $args="<DesiredTimeServer>$DesiredTimeServer</DesiredTimeServer>";
         $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetTimeServer',$args,$filter);
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetTimeServer',$args,$filter,$DesiredTimeServer);
     }
     /***************************************************************************
     /* Funktion : GetTimeServer
@@ -502,7 +492,7 @@ class SonosAlarmClock extends SonosUpnpClass {
     public function SetTimeNow($DesiredTime, $TimeZoneForDesiredTime){
         $args="<DesiredTime>$DesiredTime</DesiredTime><TimeZoneForDesiredTime>$TimeZoneForDesiredTime</TimeZoneForDesiredTime>";
         $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetTimeNow',$args,$filter);
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetTimeNow',$args,$filter,$DesiredTime);
     }
     /***************************************************************************
     /* Funktion : GetHouseholdTimeAtStamp
@@ -625,7 +615,7 @@ class SonosAlarmClock extends SonosUpnpClass {
     public function SetDailyIndexRefreshTime($DesiredDailyIndexRefreshTime){
         $args="<DesiredDailyIndexRefreshTime>$DesiredDailyIndexRefreshTime</DesiredDailyIndexRefreshTime>";
         $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetDailyIndexRefreshTime',$args,$filter);
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetDailyIndexRefreshTime',$args,$filter,$DesiredDailyIndexRefreshTime);
     }
     /***************************************************************************
     /* Funktion : GetDailyIndexRefreshTime
@@ -718,7 +708,7 @@ class SonosDeviceProperties extends SonosUpnpClass {
     public function SetLEDState($DesiredLEDState){
         $args="<DesiredLEDState>$DesiredLEDState</DesiredLEDState>";
         $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetLEDState',$args,$filter);
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetLEDState',$args,$filter,$DesiredLEDState);
     }
     /***************************************************************************
     /* Funktion : GetLEDState
@@ -804,7 +794,7 @@ class SonosDeviceProperties extends SonosUpnpClass {
     public function SetZoneAttributes($DesiredZoneName, $DesiredIcon, $DesiredConfiguration){
         $args="<DesiredZoneName>$DesiredZoneName</DesiredZoneName><DesiredIcon>$DesiredIcon</DesiredIcon><DesiredConfiguration>$DesiredConfiguration</DesiredConfiguration>";
         $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetZoneAttributes',$args,$filter);
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetZoneAttributes',$args,$filter,$DesiredZoneName);
     }
     /***************************************************************************
     /* Funktion : GetZoneAttributes
@@ -870,7 +860,7 @@ class SonosDeviceProperties extends SonosUpnpClass {
     public function SetAutoplayLinkedZones($IncludeLinkedZones){
         $args="<IncludeLinkedZones>$IncludeLinkedZones</IncludeLinkedZones>";
         $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetAutoplayLinkedZones',$args,$filter);
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetAutoplayLinkedZones',$args,$filter,$IncludeLinkedZones);
     }
     /***************************************************************************
     /* Funktion : GetAutoplayLinkedZones
@@ -898,7 +888,7 @@ class SonosDeviceProperties extends SonosUpnpClass {
     public function SetAutoplayRoomUUID($RoomUUID){
         $args="<RoomUUID>$RoomUUID</RoomUUID>";
         $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetAutoplayRoomUUID',$args,$filter);
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetAutoplayRoomUUID',$args,$filter,$RoomUUID);
     }
     /***************************************************************************
     /* Funktion : GetAutoplayRoomUUID
@@ -926,7 +916,7 @@ class SonosDeviceProperties extends SonosUpnpClass {
     public function SetAutoplayVolume($Volume){
         $args="<Volume>$Volume</Volume>";
         $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetAutoplayVolume',$args,$filter);
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetAutoplayVolume',$args,$filter,$Volume);
     }
     /***************************************************************************
     /* Funktion : GetAutoplayVolume
@@ -969,7 +959,7 @@ class SonosDeviceProperties extends SonosUpnpClass {
     public function SetUseAutoplayVolume($UseVolume){
         $args="<UseVolume>$UseVolume</UseVolume>";
         $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetUseAutoplayVolume',$args,$filter);
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetUseAutoplayVolume',$args,$filter,$UseVolume);
     }
     /***************************************************************************
     /* Funktion : GetUseAutoplayVolume
@@ -1036,7 +1026,7 @@ class SonosSystemProperties extends SonosUpnpClass {
     public function SetString($VariableName, $StringValue){
         $args="<VariableName>$VariableName</VariableName><StringValue>$StringValue</StringValue>";
         $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetString',$args,$filter);
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetString',$args,$filter,$VariableName);
     }
     /***************************************************************************
     /* Funktion : SetStringX
@@ -1051,7 +1041,7 @@ class SonosSystemProperties extends SonosUpnpClass {
     public function SetStringX($VariableName, $StringValue){
         $args="<VariableName>$VariableName</VariableName><StringValue>$StringValue</StringValue>";
         $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetStringX',$args,$filter);
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetStringX',$args,$filter,$VariableName);
     }
     /***************************************************************************
     /* Funktion : GetString
@@ -1270,7 +1260,7 @@ class SonosSystemProperties extends SonosUpnpClass {
     public function SetAccountNicknameX($AccountUDN, $AccountNickname){
         $args="<AccountUDN>$AccountUDN</AccountUDN><AccountNickname>$AccountNickname</AccountNickname>";
         $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetAccountNicknameX',$args,$filter);
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetAccountNicknameX',$args,$filter,$AccountUDN);
     }
     /***************************************************************************
     /* Funktion : RefreshAccountCredentialsX
@@ -1858,7 +1848,7 @@ class SonosContentDirectory extends SonosUpnpClass {
     public function SetBrowseable($Browseable){
         $args="<Browseable>$Browseable</Browseable>";
         $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetBrowseable',$args,$filter);
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetBrowseable',$args,$filter,$Browseable);
     }}
 
 /*##########################################################################*/
@@ -1960,7 +1950,7 @@ class SonosRenderingControl extends SonosUpnpClass {
     public function SetMute($DesiredMute, $InstanceID=0, $Channel='Master'){
         $args="<InstanceID>$InstanceID</InstanceID><Channel>$Channel</Channel><DesiredMute>$DesiredMute</DesiredMute>";
         $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetMute',$args,$filter);
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetMute',$args,$filter,$DesiredMute);
     }
     /***************************************************************************
     /* Funktion : ResetBasicEQ
@@ -2026,7 +2016,7 @@ class SonosRenderingControl extends SonosUpnpClass {
     public function SetVolume($DesiredVolume, $InstanceID=0, $Channel='Master'){
         $args="<InstanceID>$InstanceID</InstanceID><Channel>$Channel</Channel><DesiredVolume>$DesiredVolume</DesiredVolume>";
         $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetVolume',$args,$filter);
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetVolume',$args,$filter,$DesiredVolume);
     }
     /***************************************************************************
     /* Funktion : SetRelativeVolume
@@ -2043,7 +2033,7 @@ class SonosRenderingControl extends SonosUpnpClass {
     public function SetRelativeVolume($Adjustment, $InstanceID=0, $Channel='Master'){
         $args="<InstanceID>$InstanceID</InstanceID><Channel>$Channel</Channel><Adjustment>$Adjustment</Adjustment>";
         $filter="NewVolume";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetRelativeVolume',$args,$filter);
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetRelativeVolume',$args,$filter,$Adjustment);
     }
     /***************************************************************************
     /* Funktion : GetVolumeDB
@@ -2075,7 +2065,7 @@ class SonosRenderingControl extends SonosUpnpClass {
     public function SetVolumeDB($DesiredVolume, $InstanceID=0, $Channel='Master'){
         $args="<InstanceID>$InstanceID</InstanceID><Channel>$Channel</Channel><DesiredVolume>$DesiredVolume</DesiredVolume>";
         $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetVolumeDB',$args,$filter);
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetVolumeDB',$args,$filter,$DesiredVolume);
     }
     /***************************************************************************
     /* Funktion : GetVolumeDBRange
@@ -2122,7 +2112,7 @@ class SonosRenderingControl extends SonosUpnpClass {
     public function SetBass($DesiredBass, $InstanceID=0){
         $args="<InstanceID>$InstanceID</InstanceID><DesiredBass>$DesiredBass</DesiredBass>";
         $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetBass',$args,$filter);
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetBass',$args,$filter,$DesiredBass);
     }
     /***************************************************************************
     /* Funktion : GetTreble
@@ -2152,7 +2142,7 @@ class SonosRenderingControl extends SonosUpnpClass {
     public function SetTreble($DesiredTreble, $InstanceID=0){
         $args="<InstanceID>$InstanceID</InstanceID><DesiredTreble>$DesiredTreble</DesiredTreble>";
         $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetTreble',$args,$filter);
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetTreble',$args,$filter,$DesiredTreble);
     }
     /***************************************************************************
     /* Funktion : GetEQ
@@ -2184,7 +2174,7 @@ class SonosRenderingControl extends SonosUpnpClass {
     public function SetEQ($EQType, $DesiredValue, $InstanceID=0){
         $args="<InstanceID>$InstanceID</InstanceID><EQType>$EQType</EQType><DesiredValue>$DesiredValue</DesiredValue>";
         $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetEQ',$args,$filter);
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetEQ',$args,$filter,$EQType);
     }
     /***************************************************************************
     /* Funktion : GetLoudness
@@ -2216,7 +2206,7 @@ class SonosRenderingControl extends SonosUpnpClass {
     public function SetLoudness($DesiredLoudness, $InstanceID=0, $Channel='Master'){
         $args="<InstanceID>$InstanceID</InstanceID><Channel>$Channel</Channel><DesiredLoudness>$DesiredLoudness</DesiredLoudness>";
         $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetLoudness',$args,$filter);
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetLoudness',$args,$filter,$DesiredLoudness);
     }
     /***************************************************************************
     /* Funktion : GetSupportsOutputFixed
@@ -2261,7 +2251,7 @@ class SonosRenderingControl extends SonosUpnpClass {
     public function SetOutputFixed($DesiredFixed, $InstanceID=0){
         $args="<InstanceID>$InstanceID</InstanceID><DesiredFixed>$DesiredFixed</DesiredFixed>";
         $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetOutputFixed',$args,$filter);
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetOutputFixed',$args,$filter,$DesiredFixed);
     }
     /***************************************************************************
     /* Funktion : GetHeadphoneConnected
@@ -2326,7 +2316,7 @@ class SonosRenderingControl extends SonosUpnpClass {
     public function SetChannelMap($ChannelMap, $InstanceID=0){
         $args="<InstanceID>$InstanceID</InstanceID><ChannelMap>$ChannelMap</ChannelMap>";
         $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetChannelMap',$args,$filter);
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetChannelMap',$args,$filter,$ChannelMap);
     }}
 
 /*##########################################################################*/
@@ -2352,7 +2342,7 @@ class SonosAVTransport extends SonosUpnpClass {
     public function SetAVTransportURI($CurrentURI, $CurrentURIMetaData, $InstanceID=0){
         $args="<InstanceID>$InstanceID</InstanceID><CurrentURI>$CurrentURI</CurrentURI><CurrentURIMetaData>$CurrentURIMetaData</CurrentURIMetaData>";
         $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetAVTransportURI',$args,$filter);
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetAVTransportURI',$args,$filter,$CurrentURI);
     }
     /***************************************************************************
     /* Funktion : SetNextAVTransportURI
@@ -2368,7 +2358,7 @@ class SonosAVTransport extends SonosUpnpClass {
     public function SetNextAVTransportURI($NextURI, $NextURIMetaData, $InstanceID=0){
         $args="<InstanceID>$InstanceID</InstanceID><NextURI>$NextURI</NextURI><NextURIMetaData>$NextURIMetaData</NextURIMetaData>";
         $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetNextAVTransportURI',$args,$filter);
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetNextAVTransportURI',$args,$filter,$NextURI);
     }
     /***************************************************************************
     /* Funktion : AddURIToQueue
@@ -2830,7 +2820,7 @@ class SonosAVTransport extends SonosUpnpClass {
     public function SetPlayMode($NewPlayMode, $InstanceID=0){
         $args="<InstanceID>$InstanceID</InstanceID><NewPlayMode>$NewPlayMode</NewPlayMode>";
         $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetPlayMode',$args,$filter);
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetPlayMode',$args,$filter,$NewPlayMode);
     }
     /***************************************************************************
     /* Funktion : SetCrossfadeMode
@@ -2845,7 +2835,7 @@ class SonosAVTransport extends SonosUpnpClass {
     public function SetCrossfadeMode($CrossfadeMode, $InstanceID=0){
         $args="<InstanceID>$InstanceID</InstanceID><CrossfadeMode>$CrossfadeMode</CrossfadeMode>";
         $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetCrossfadeMode',$args,$filter);
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetCrossfadeMode',$args,$filter,$CrossfadeMode);
     }
     /***************************************************************************
     /* Funktion : NotifyDeletedURI
@@ -3349,7 +3339,7 @@ class SonosGroupRenderingControl extends SonosUpnpClass {
     public function SetGroupMute($DesiredMute, $InstanceID=0){
         $args="<InstanceID>$InstanceID</InstanceID><DesiredMute>$DesiredMute</DesiredMute>";
         $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetGroupMute',$args,$filter);
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetGroupMute',$args,$filter,$DesiredMute);
     }
     /***************************************************************************
     /* Funktion : GetGroupVolume
@@ -3379,7 +3369,7 @@ class SonosGroupRenderingControl extends SonosUpnpClass {
     public function SetGroupVolume($DesiredVolume, $InstanceID=0){
         $args="<InstanceID>$InstanceID</InstanceID><DesiredVolume>$DesiredVolume</DesiredVolume>";
         $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetGroupVolume',$args,$filter);
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetGroupVolume',$args,$filter,$DesiredVolume);
     }
     /***************************************************************************
     /* Funktion : SetRelativeGroupVolume
@@ -3395,7 +3385,7 @@ class SonosGroupRenderingControl extends SonosUpnpClass {
     public function SetRelativeGroupVolume($Adjustment, $InstanceID=0){
         $args="<InstanceID>$InstanceID</InstanceID><Adjustment>$Adjustment</Adjustment>";
         $filter="NewVolume";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetRelativeGroupVolume',$args,$filter);
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetRelativeGroupVolume',$args,$filter,$Adjustment);
     }
     /***************************************************************************
     /* Funktion : SnapshotGroupVolume

@@ -2,7 +2,7 @@
 //---------------------------------------------------------------------------/
 //	
 //  
-//	Desc     : PHP Classes to Control FRITZ!Box Fon WLAN 7390 
+//	Desc     : PHP Classes to Control MULTI CHANNEL AV RECEIVER 
 //	Date     : 2015-04-10T01:05:46+02:00
 //	Version  : 1.00.45
 //	Publisher: (c)2015 Xaver Bauer 
@@ -11,7 +11,7 @@
 //--------------------------------------------------------------------------/
 
 /*##########################################################################/
-/*  Class  : FritzboxXmlRpcDevice 
+/*  Class  : SonyXmlRpcDevice 
 /*  Desc   : Master Class to Controll Device 
 /*	Vars   :
 /*  protected _SERVICES  : (object) Holder for all Service Classes
@@ -19,16 +19,16 @@
 /*  protected _IP        : (string) IP Adress from Device
 /*  protected _PORT      : (int)    Port from Device
 /*##########################################################################*/
-class FritzboxXmlRpcDevice {
+class SonyXmlRpcDevice {
     protected $_SERVICES=null;
     protected $_DEVICES=null;
     protected $_IP='';
-    protected $_PORT=49000;
+    protected $_PORT=8080;
     /***************************************************************************
     /* Funktion : __construct
     /* 
     /*  Benoetigt:
-    /*    @url (string)  Device Url eg. 'fritz.box:49000'
+    /*    @url (string)  Device Url eg. '192.168.112.61:8080'
     /*
     /*  Liefert als Ergebnis: Nichts
     /*
@@ -36,13 +36,15 @@ class FritzboxXmlRpcDevice {
     public function __construct($url){
         $p=parse_url($url);
         $this->_IP=(isSet($p['host']))?$p['host']:$url;
-        $this->_PORT=(isSet($p['port']))?$p['port']:49000;
+        $this->_PORT=(isSet($p['port']))?$p['port']:8080;
         $this->_SERVICES=new stdClass();
         $this->_DEVICES=new stdClass();
-        $this->_SERVICES->Any=new FritzboxAny($this);
-        $this->_DEVICES->WANCommonInterfaceConfig=new FritzboxWANCommonInterfaceConfig($this);
-        $this->_DEVICES->WANDSLLinkConfig=new FritzboxWANDSLLinkConfig($this);
-        $this->_DEVICES->WANIPConnection=new FritzboxWANIPConnection($this);
+        $this->_SERVICES->RenderingControl=new SonyRenderingControl($this);
+        $this->_SERVICES->ConnectionManager=new SonyConnectionManager($this);
+        $this->_SERVICES->AVTransport=new SonyAVTransport($this);
+        $this->_SERVICES->IRCC=new SonyIRCC($this);
+        $this->_SERVICES->X_Tandem=new SonyX_Tandem($this);
+        $this->_DEVICES->X_CIS=new SonyX_CIS($this);
     }
     /***************************************************************************
     /* Funktion : GetIcon
@@ -58,7 +60,10 @@ class FritzboxXmlRpcDevice {
     /****************************************************************************/
     function GetIcon($id) {
         switch($id){
-            case 0 : return array('width'=>118,'height'=>119,'url'=>$this->GetBaseUrl().'/ligd.gif');break;
+            case 0 : return array('width'=>48,'height'=>48,'url'=>$this->GetBaseUrl().'/device_icon_48.jpg');break;
+            case 1 : return array('width'=>120,'height'=>120,'url'=>$this->GetBaseUrl().'/device_icon_120.jpg');break;
+            case 2 : return array('width'=>48,'height'=>48,'url'=>$this->GetBaseUrl().'/device_icon_48.png');break;
+            case 3 : return array('width'=>120,'height'=>120,'url'=>$this->GetBaseUrl().'/device_icon_120.png');break;
         }
         return array('width'=>0,'height'=>0,'url'=>'');
     }
@@ -71,7 +76,7 @@ class FritzboxXmlRpcDevice {
     /*    @count (int) => The Numbers of Icons Avail
     /*
     /****************************************************************************/
-    function IconCount() { return 1;}
+    function IconCount() { return 4;}
     /***************************************************************************
     /* Funktion : Upnp
     /* 
@@ -198,9 +203,6 @@ class FritzboxXmlRpcDevice {
                 case 2: return $p->$FunctionName($a[0],$a[1]);break;
                 case 3: return $p->$FunctionName($a[0],$a[1],$a[2]);break;
                 case 4: return $p->$FunctionName($a[0],$a[1],$a[2],$a[3]);break;
-                case 5: return $p->$FunctionName($a[0],$a[1],$a[2],$a[3],$a[4]);break;
-                case 6: return $p->$FunctionName($a[0],$a[1],$a[2],$a[3],$a[4],$a[5]);break;
-                case 7: return $p->$FunctionName($a[0],$a[1],$a[2],$a[3],$a[4],$a[5],$a[6]);break;
                 default: return $p->$FunctionName();
             }
         }else return $p->$FunctionName();
@@ -270,7 +272,7 @@ class FritzboxXmlRpcDevice {
     }
 }
 /*##########################################################################/
-/*  Class  : FritzboxUpnpClass 
+/*  Class  : SonyUpnpClass 
 /*  Desc   : Basis Class for Services
 /*	Vars   :
 /*  protected SERVICE     : (string) Service URN
@@ -278,7 +280,7 @@ class FritzboxXmlRpcDevice {
 /*  protected EVENTURL    : (string) Path to Event Control
 /*  protected BASE        : (Object) Points to MasterClass
 /*##########################################################################*/
-class FritzboxUpnpClass {
+class SonyUpnpClass {
     protected $SERVICE="";
     protected $SERVICEURL="";
     protected $EVENTURL="";
@@ -337,465 +339,540 @@ class FritzboxUpnpClass {
     }
 }
 /*##########################################################################*/
-/*  Class  : Any 
-/*  Service: urn:schemas-any-com:service:Any:1
-/*	     Id: urn:any-com:serviceId:any1 
+/*  Class  : RenderingControl 
+/*  Service: urn:schemas-upnp-org:service:RenderingControl:1
+/*	     Id: urn:upnp-org:serviceId:RenderingControl 
 /*##########################################################################*/
-class FritzboxAny extends FritzboxUpnpClass {
-    protected $SERVICE='urn:schemas-any-com:service:Any:1';
-    protected $SERVICEURL='/igdupnp/control/any';
-    protected $EVENTURL='/igdupnp/control/any';
-}
-
-/*##########################################################################*/
-/*  Class  : WANCommonInterfaceConfig 
-/*  Service: urn:schemas-upnp-org:service:WANCommonInterfaceConfig:1
-/*	     Id: urn:upnp-org:serviceId:WANCommonIFC1 
-/*##########################################################################*/
-class FritzboxWANCommonInterfaceConfig extends FritzboxUpnpClass {
-    protected $SERVICE='urn:schemas-upnp-org:service:WANCommonInterfaceConfig:1';
-    protected $SERVICEURL='/igdupnp/control/WANCommonIFC1';
-    protected $EVENTURL='/igdupnp/control/WANCommonIFC1';
+class SonyRenderingControl extends SonyUpnpClass {
+    protected $SERVICE='urn:schemas-upnp-org:service:RenderingControl:1';
+    protected $SERVICEURL='/RenderingControl/ctrl';
+    protected $EVENTURL='/RenderingControl/evt';
     /***************************************************************************
-    /* Funktion : GetCommonLinkProperties
+    /* Funktion : ListPresets
     /* 
-    /*  Benoetigt: Nichts
-    /*
-    /*  Liefert als Ergebnis: Array mit folgenden Keys
-    /*          @NewWANAccessType (string)  => Auswahl: DSL|POTS|Cable|Ethernet|Other
-    /*          @NewLayer1UpstreamMaxBitRate (ui4) 
-    /*          @NewLayer1DownstreamMaxBitRate (ui4) 
-    /*          @NewPhysicalLinkStatus (string)  => Auswahl: Up|Down|Initializing|Unavailable
-    /*
-    /****************************************************************************/
-    public function GetCommonLinkProperties(){
-        $args="";
-        $filter="NewWANAccessType,NewLayer1UpstreamMaxBitRate,NewLayer1DownstreamMaxBitRate,NewPhysicalLinkStatus";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'GetCommonLinkProperties',$args,$filter);
-    }
-    /***************************************************************************
-    /* Funktion : GetTotalBytesSent
-    /* 
-    /*  Benoetigt: Nichts
+    /*  Benoetigt:
+    /*          @InstanceID (ui4) Vorgabe = 0 
     /*
     /*  Liefert als Ergebnis:
-    /*          @NewTotalBytesSent (ui4) 
+    /*          @CurrentPresetNameList (string) 
     /*
     /****************************************************************************/
-    public function GetTotalBytesSent(){
-        $args="";
-        $filter="NewTotalBytesSent";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'GetTotalBytesSent',$args,$filter);
+    public function ListPresets($InstanceID=0){
+        $args="<InstanceID>$InstanceID</InstanceID>";
+        $filter="CurrentPresetNameList";
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'ListPresets',$args,$filter);
     }
     /***************************************************************************
-    /* Funktion : GetTotalBytesReceived
+    /* Funktion : SelectPreset
     /* 
-    /*  Benoetigt: Nichts
+    /*  Benoetigt:
+    /*          @InstanceID (ui4) Vorgabe = 0 
+    /*          @PresetName (string)  => Auswahl: FactoryDefaults
+    /*
+    /*  Liefert als Ergebnis: Nichts
+    /*
+    /****************************************************************************/
+    public function SelectPreset($PresetName, $InstanceID=0){
+        $args="<InstanceID>$InstanceID</InstanceID><PresetName>$PresetName</PresetName>";
+        $filter="";
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SelectPreset',$args,$filter);
+    }
+    /***************************************************************************
+    /* Funktion : GetMute
+    /* 
+    /*  Benoetigt:
+    /*          @InstanceID (ui4) Vorgabe = 0 
+    /*          @Channel (string) Vorgabe = 'Master'  => Auswahl: Master
     /*
     /*  Liefert als Ergebnis:
-    /*          @NewTotalBytesReceived (ui4) 
+    /*          @CurrentMute (boolean) 
     /*
     /****************************************************************************/
-    public function GetTotalBytesReceived(){
-        $args="";
-        $filter="NewTotalBytesReceived";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'GetTotalBytesReceived',$args,$filter);
+    public function GetMute($InstanceID=0, $Channel='Master'){
+        $args="<InstanceID>$InstanceID</InstanceID><Channel>$Channel</Channel>";
+        $filter="CurrentMute";
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'GetMute',$args,$filter);
     }
     /***************************************************************************
-    /* Funktion : GetTotalPacketsSent
+    /* Funktion : SetMute
     /* 
-    /*  Benoetigt: Nichts
+    /*  Benoetigt:
+    /*          @InstanceID (ui4) Vorgabe = 0 
+    /*          @Channel (string) Vorgabe = 'Master'  => Auswahl: Master
+    /*          @DesiredMute (boolean) 
+    /*
+    /*  Liefert als Ergebnis: Nichts
+    /*
+    /****************************************************************************/
+    public function SetMute($DesiredMute, $InstanceID=0, $Channel='Master'){
+        $args="<InstanceID>$InstanceID</InstanceID><Channel>$Channel</Channel><DesiredMute>$DesiredMute</DesiredMute>";
+        $filter="";
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetMute',$args,$filter,$DesiredMute);
+    }
+    /***************************************************************************
+    /* Funktion : GetVolume
+    /* 
+    /*  Benoetigt:
+    /*          @InstanceID (ui4) Vorgabe = 0 
+    /*          @Channel (string) Vorgabe = 'Master'  => Auswahl: Master
     /*
     /*  Liefert als Ergebnis:
-    /*          @NewTotalPacketsSent (ui4) 
+    /*          @CurrentVolume (ui2) 
     /*
     /****************************************************************************/
-    public function GetTotalPacketsSent(){
-        $args="";
-        $filter="NewTotalPacketsSent";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'GetTotalPacketsSent',$args,$filter);
+    public function GetVolume($InstanceID=0, $Channel='Master'){
+        $args="<InstanceID>$InstanceID</InstanceID><Channel>$Channel</Channel>";
+        $filter="CurrentVolume";
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'GetVolume',$args,$filter);
     }
     /***************************************************************************
-    /* Funktion : GetTotalPacketsReceived
+    /* Funktion : SetVolume
     /* 
-    /*  Benoetigt: Nichts
+    /*  Benoetigt:
+    /*          @InstanceID (ui4) Vorgabe = 0 
+    /*          @Channel (string) Vorgabe = 'Master'  => Auswahl: Master
+    /*          @DesiredVolume (ui2) 
     /*
-    /*  Liefert als Ergebnis:
-    /*          @NewTotalPacketsReceived (ui4) 
+    /*  Liefert als Ergebnis: Nichts
     /*
     /****************************************************************************/
-    public function GetTotalPacketsReceived(){
-        $args="";
-        $filter="NewTotalPacketsReceived";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'GetTotalPacketsReceived',$args,$filter);
-    }
-    /***************************************************************************
-    /* Funktion : GetAddonInfos
-    /* 
-    /*  Benoetigt: Nichts
-    /*
-    /*  Liefert als Ergebnis: Array mit folgenden Keys
-    /*          @NewByteSendRate (ui4) 
-    /*          @NewByteReceiveRate (ui4) 
-    /*          @NewPacketSendRate (ui4) 
-    /*          @NewPacketReceiveRate (ui4) 
-    /*          @NewTotalBytesSent (ui4) 
-    /*          @NewTotalBytesReceived (ui4) 
-    /*          @NewAutoDisconnectTime (ui4) 
-    /*          @NewIdleDisconnectTime (ui4) 
-    /*          @NewDNSServer1 (string) 
-    /*          @NewDNSServer2 (string) 
-    /*          @NewVoipDNSServer1 (string) 
-    /*          @NewVoipDNSServer2 (string) 
-    /*          @NewUpnpControlEnabled (boolean) 
-    /*          @NewRoutedBridgedModeBoth (ui1) 
-    /*
-    /****************************************************************************/
-    public function GetAddonInfos(){
-        $args="";
-        $filter="NewByteSendRate,NewByteReceiveRate,NewPacketSendRate,NewPacketReceiveRate,NewTotalBytesSent,NewTotalBytesReceived,NewAutoDisconnectTime,NewIdleDisconnectTime,NewDNSServer1,NewDNSServer2,NewVoipDNSServer1,NewVoipDNSServer2,NewUpnpControlEnabled,NewRoutedBridgedModeBoth";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'GetAddonInfos',$args,$filter);
+    public function SetVolume($DesiredVolume, $InstanceID=0, $Channel='Master'){
+        $args="<InstanceID>$InstanceID</InstanceID><Channel>$Channel</Channel><DesiredVolume>$DesiredVolume</DesiredVolume>";
+        $filter="";
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetVolume',$args,$filter,$DesiredVolume);
     }}
 
 /*##########################################################################*/
-/*  Class  : WANDSLLinkConfig 
-/*  Service: urn:schemas-upnp-org:service:WANDSLLinkConfig:1
-/*	     Id: urn:upnp-org:serviceId:WANDSLLinkC1 
+/*  Class  : ConnectionManager 
+/*  Service: urn:schemas-upnp-org:service:ConnectionManager:1
+/*	     Id: urn:upnp-org:serviceId:ConnectionManager 
 /*##########################################################################*/
-class FritzboxWANDSLLinkConfig extends FritzboxUpnpClass {
-    protected $SERVICE='urn:schemas-upnp-org:service:WANDSLLinkConfig:1';
-    protected $SERVICEURL='/igdupnp/control/WANDSLLinkC1';
-    protected $EVENTURL='/igdupnp/control/WANDSLLinkC1';
+class SonyConnectionManager extends SonyUpnpClass {
+    protected $SERVICE='urn:schemas-upnp-org:service:ConnectionManager:1';
+    protected $SERVICEURL='/ConnectionManager/ctrl';
+    protected $EVENTURL='/ConnectionManager/evt';
     /***************************************************************************
-    /* Funktion : SetDSLLinkType
-    /* 
-    /*  Benoetigt:
-    /*          @NewLinkType (string)  => Auswahl: EoA|IPoA|CIP|PPPoA|PPPoE|Unconfigured
-    /*
-    /*  Liefert als Ergebnis: Nichts
-    /*
-    /****************************************************************************/
-    public function SetDSLLinkType($NewLinkType){
-        $args="<NewLinkType>$NewLinkType</NewLinkType>";
-        $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetDSLLinkType',$args,$filter,$NewLinkType);
-    }
-    /***************************************************************************
-    /* Funktion : GetDSLLinkInfo
+    /* Funktion : GetProtocolInfo
     /* 
     /*  Benoetigt: Nichts
     /*
     /*  Liefert als Ergebnis: Array mit folgenden Keys
-    /*          @NewLinkType (string)  => Auswahl: EoA|IPoA|CIP|PPPoA|PPPoE|Unconfigured
-    /*          @NewLinkStatus (string)  => Auswahl: Up|Down|Initializing|Unavailable
+    /*          @Source (string) 
+    /*          @Sink (string) 
     /*
     /****************************************************************************/
-    public function GetDSLLinkInfo(){
+    public function GetProtocolInfo(){
         $args="";
-        $filter="NewLinkType,NewLinkStatus";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'GetDSLLinkInfo',$args,$filter);
+        $filter="Source,Sink";
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'GetProtocolInfo',$args,$filter);
     }
     /***************************************************************************
-    /* Funktion : GetAutoConfig
+    /* Funktion : GetCurrentConnectionIDs
     /* 
     /*  Benoetigt: Nichts
     /*
     /*  Liefert als Ergebnis:
-    /*          @NewAutoConfig (boolean) 
+    /*          @ConnectionIDs (string) 
     /*
     /****************************************************************************/
-    public function GetAutoConfig(){
+    public function GetCurrentConnectionIDs(){
         $args="";
-        $filter="NewAutoConfig";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'GetAutoConfig',$args,$filter);
+        $filter="ConnectionIDs";
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'GetCurrentConnectionIDs',$args,$filter);
     }
     /***************************************************************************
-    /* Funktion : GetModulationType
-    /* 
-    /*  Benoetigt: Nichts
-    /*
-    /*  Liefert als Ergebnis:
-    /*          @NewModulationType (string)  => Auswahl: ADSL G.lite|G.shdsl|IDSL|HDSL|SDSL|VDSL
-    /*
-    /****************************************************************************/
-    public function GetModulationType(){
-        $args="";
-        $filter="NewModulationType";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'GetModulationType',$args,$filter);
-    }
-    /***************************************************************************
-    /* Funktion : SetDestinationAddress
+    /* Funktion : GetCurrentConnectionInfo
     /* 
     /*  Benoetigt:
-    /*          @NewDestinationAddress (string) 
+    /*          @ConnectionID (i4) 
     /*
-    /*  Liefert als Ergebnis: Nichts
-    /*
-    /****************************************************************************/
-    public function SetDestinationAddress($NewDestinationAddress){
-        $args="<NewDestinationAddress>$NewDestinationAddress</NewDestinationAddress>";
-        $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetDestinationAddress',$args,$filter,$NewDestinationAddress);
-    }
-    /***************************************************************************
-    /* Funktion : GetDestinationAddress
-    /* 
-    /*  Benoetigt: Nichts
-    /*
-    /*  Liefert als Ergebnis:
-    /*          @NewDestinationAddress (string) 
+    /*  Liefert als Ergebnis: Array mit folgenden Keys
+    /*          @RcsID (i4) 
+    /*          @AVTransportID (i4) 
+    /*          @ProtocolInfo (string) 
+    /*          @PeerConnectionManager (string) 
+    /*          @PeerConnectionID (i4) 
+    /*          @Direction (string)  => Auswahl: Input|Output
+    /*          @Status (string)  => Auswahl: OK|ContentFormatMismatch|InsufficientBandwidth|UnreliableChannel|Unknown
     /*
     /****************************************************************************/
-    public function GetDestinationAddress(){
-        $args="";
-        $filter="NewDestinationAddress";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'GetDestinationAddress',$args,$filter);
-    }
-    /***************************************************************************
-    /* Funktion : SetATMEncapsulation
-    /* 
-    /*  Benoetigt:
-    /*          @NewATMEncapsulation (string)  => Auswahl: LLC|VCMUX
-    /*
-    /*  Liefert als Ergebnis: Nichts
-    /*
-    /****************************************************************************/
-    public function SetATMEncapsulation($NewATMEncapsulation){
-        $args="<NewATMEncapsulation>$NewATMEncapsulation</NewATMEncapsulation>";
-        $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetATMEncapsulation',$args,$filter,$NewATMEncapsulation);
-    }
-    /***************************************************************************
-    /* Funktion : GetATMEncapsulation
-    /* 
-    /*  Benoetigt: Nichts
-    /*
-    /*  Liefert als Ergebnis:
-    /*          @NewATMEncapsulation (string)  => Auswahl: LLC|VCMUX
-    /*
-    /****************************************************************************/
-    public function GetATMEncapsulation(){
-        $args="";
-        $filter="NewATMEncapsulation";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'GetATMEncapsulation',$args,$filter);
-    }
-    /***************************************************************************
-    /* Funktion : SetFCSPreserved
-    /* 
-    /*  Benoetigt:
-    /*          @NewFCSPreserved (boolean) 
-    /*
-    /*  Liefert als Ergebnis: Nichts
-    /*
-    /****************************************************************************/
-    public function SetFCSPreserved($NewFCSPreserved){
-        $args="<NewFCSPreserved>$NewFCSPreserved</NewFCSPreserved>";
-        $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetFCSPreserved',$args,$filter,$NewFCSPreserved);
-    }
-    /***************************************************************************
-    /* Funktion : GetFCSPreserved
-    /* 
-    /*  Benoetigt: Nichts
-    /*
-    /*  Liefert als Ergebnis:
-    /*          @NewFCSPreserved (boolean) 
-    /*
-    /****************************************************************************/
-    public function GetFCSPreserved(){
-        $args="";
-        $filter="NewFCSPreserved";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'GetFCSPreserved',$args,$filter);
+    public function GetCurrentConnectionInfo($ConnectionID){
+        $args="<ConnectionID>$ConnectionID</ConnectionID>";
+        $filter="RcsID,AVTransportID,ProtocolInfo,PeerConnectionManager,PeerConnectionID,Direction,Status";
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'GetCurrentConnectionInfo',$args,$filter);
     }}
 
 /*##########################################################################*/
-/*  Class  : WANIPConnection 
-/*  Service: urn:schemas-upnp-org:service:WANIPConnection:1
-/*	     Id: urn:upnp-org:serviceId:WANIPConn1 
+/*  Class  : AVTransport 
+/*  Service: urn:schemas-upnp-org:service:AVTransport:1
+/*	     Id: urn:upnp-org:serviceId:AVTransport 
 /*##########################################################################*/
-class FritzboxWANIPConnection extends FritzboxUpnpClass {
-    protected $SERVICE='urn:schemas-upnp-org:service:WANIPConnection:1';
-    protected $SERVICEURL='/igdupnp/control/WANIPConn1';
-    protected $EVENTURL='/igdupnp/control/WANIPConn1';
+class SonyAVTransport extends SonyUpnpClass {
+    protected $SERVICE='urn:schemas-upnp-org:service:AVTransport:1';
+    protected $SERVICEURL='/AVTransport/ctrl';
+    protected $EVENTURL='/AVTransport/evt';
     /***************************************************************************
-    /* Funktion : SetConnectionType
+    /* Funktion : SetAVTransportURI
     /* 
     /*  Benoetigt:
-    /*          @NewConnectionType (string) 
+    /*          @InstanceID (ui4) Vorgabe = 0 
+    /*          @CurrentURI (string) 
+    /*          @CurrentURIMetaData (string) 
     /*
     /*  Liefert als Ergebnis: Nichts
     /*
     /****************************************************************************/
-    public function SetConnectionType($NewConnectionType){
-        $args="<NewConnectionType>$NewConnectionType</NewConnectionType>";
+    public function SetAVTransportURI($CurrentURI, $CurrentURIMetaData, $InstanceID=0){
+        $args="<InstanceID>$InstanceID</InstanceID><CurrentURI>$CurrentURI</CurrentURI><CurrentURIMetaData>$CurrentURIMetaData</CurrentURIMetaData>";
         $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetConnectionType',$args,$filter,$NewConnectionType);
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetAVTransportURI',$args,$filter,$CurrentURI);
     }
     /***************************************************************************
-    /* Funktion : GetConnectionTypeInfo
+    /* Funktion : SetNextAVTransportURI
     /* 
-    /*  Benoetigt: Nichts
-    /*
-    /*  Liefert als Ergebnis: Array mit folgenden Keys
-    /*          @NewConnectionType (string) 
-    /*          @NewPossibleConnectionTypes (string)  => Auswahl: Unconfigured|IP_Routed|IP_Bridged
-    /*
-    /****************************************************************************/
-    public function GetConnectionTypeInfo(){
-        $args="";
-        $filter="NewConnectionType,NewPossibleConnectionTypes";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'GetConnectionTypeInfo',$args,$filter);
-    }
-    /***************************************************************************
-    /* Funktion : RequestConnection
-    /* 
-    /*  Benoetigt: Nichts
+    /*  Benoetigt:
+    /*          @InstanceID (ui4) Vorgabe = 0 
+    /*          @NextURI (string) 
+    /*          @NextURIMetaData (string) 
     /*
     /*  Liefert als Ergebnis: Nichts
     /*
     /****************************************************************************/
-    public function RequestConnection(){
-        $args="";
+    public function SetNextAVTransportURI($NextURI, $NextURIMetaData, $InstanceID=0){
+        $args="<InstanceID>$InstanceID</InstanceID><NextURI>$NextURI</NextURI><NextURIMetaData>$NextURIMetaData</NextURIMetaData>";
         $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'RequestConnection',$args,$filter);
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetNextAVTransportURI',$args,$filter,$NextURI);
     }
     /***************************************************************************
-    /* Funktion : ForceTermination
+    /* Funktion : GetMediaInfo
     /* 
-    /*  Benoetigt: Nichts
+    /*  Benoetigt:
+    /*          @InstanceID (ui4) Vorgabe = 0 
+    /*
+    /*  Liefert als Ergebnis: Array mit folgenden Keys
+    /*          @NrTracks (ui4) 
+    /*          @MediaDuration (string) 
+    /*          @CurrentURI (string) 
+    /*          @CurrentURIMetaData (string) 
+    /*          @NextURI (string) 
+    /*          @NextURIMetaData (string) 
+    /*          @PlayMedium (string)  => Auswahl: NETWORK
+    /*          @RecordMedium (string)  => Auswahl: NOT_IMPLEMENTED
+    /*          @WriteStatus (string)  => Auswahl: NOT_IMPLEMENTED
+    /*
+    /****************************************************************************/
+    public function GetMediaInfo($InstanceID=0){
+        $args="<InstanceID>$InstanceID</InstanceID>";
+        $filter="NrTracks,MediaDuration,CurrentURI,CurrentURIMetaData,NextURI,NextURIMetaData,PlayMedium,RecordMedium,WriteStatus";
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'GetMediaInfo',$args,$filter);
+    }
+    /***************************************************************************
+    /* Funktion : GetTransportInfo
+    /* 
+    /*  Benoetigt:
+    /*          @InstanceID (ui4) Vorgabe = 0 
+    /*
+    /*  Liefert als Ergebnis: Array mit folgenden Keys
+    /*          @CurrentTransportState (string)  => Auswahl: STOPPED|PLAYING|PAUSED_PLAYBACK|TRANSITIONING|NO_MEDIA_PRESENT
+    /*          @CurrentTransportStatus (string)  => Auswahl: OK|ERROR_OCCURRED
+    /*          @CurrentSpeed (string)  => Auswahl: 1
+    /*
+    /****************************************************************************/
+    public function GetTransportInfo($InstanceID=0){
+        $args="<InstanceID>$InstanceID</InstanceID>";
+        $filter="CurrentTransportState,CurrentTransportStatus,CurrentSpeed";
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'GetTransportInfo',$args,$filter);
+    }
+    /***************************************************************************
+    /* Funktion : GetPositionInfo
+    /* 
+    /*  Benoetigt:
+    /*          @InstanceID (ui4) Vorgabe = 0 
+    /*
+    /*  Liefert als Ergebnis: Array mit folgenden Keys
+    /*          @Track (ui4) 
+    /*          @TrackDuration (string) 
+    /*          @TrackMetaData (string) 
+    /*          @TrackURI (string) 
+    /*          @RelTime (string) 
+    /*          @AbsTime (string) 
+    /*          @RelCount (i4) 
+    /*          @AbsCount (i4) 
+    /*
+    /****************************************************************************/
+    public function GetPositionInfo($InstanceID=0){
+        $args="<InstanceID>$InstanceID</InstanceID>";
+        $filter="Track,TrackDuration,TrackMetaData,TrackURI,RelTime,AbsTime,RelCount,AbsCount";
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'GetPositionInfo',$args,$filter);
+    }
+    /***************************************************************************
+    /* Funktion : GetDeviceCapabilities
+    /* 
+    /*  Benoetigt:
+    /*          @InstanceID (ui4) Vorgabe = 0 
+    /*
+    /*  Liefert als Ergebnis: Array mit folgenden Keys
+    /*          @PlayMedia (string) 
+    /*          @RecMedia (string) 
+    /*          @RecQualityModes (string) 
+    /*
+    /****************************************************************************/
+    public function GetDeviceCapabilities($InstanceID=0){
+        $args="<InstanceID>$InstanceID</InstanceID>";
+        $filter="PlayMedia,RecMedia,RecQualityModes";
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'GetDeviceCapabilities',$args,$filter);
+    }
+    /***************************************************************************
+    /* Funktion : GetTransportSettings
+    /* 
+    /*  Benoetigt:
+    /*          @InstanceID (ui4) Vorgabe = 0 
+    /*
+    /*  Liefert als Ergebnis: Array mit folgenden Keys
+    /*          @PlayMode (string)  => Auswahl: NORMAL|RANDOM|REPEAT_ONE|REPEAT_ALL
+    /*          @RecQualityMode (string)  => Auswahl: NOT_IMPLEMENTED
+    /*
+    /****************************************************************************/
+    public function GetTransportSettings($InstanceID=0){
+        $args="<InstanceID>$InstanceID</InstanceID>";
+        $filter="PlayMode,RecQualityMode";
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'GetTransportSettings',$args,$filter);
+    }
+    /***************************************************************************
+    /* Funktion : Stop
+    /* 
+    /*  Benoetigt:
+    /*          @InstanceID (ui4) Vorgabe = 0 
     /*
     /*  Liefert als Ergebnis: Nichts
     /*
     /****************************************************************************/
-    public function ForceTermination(){
-        $args="";
+    public function Stop($InstanceID=0){
+        $args="<InstanceID>$InstanceID</InstanceID>";
         $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'ForceTermination',$args,$filter);
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'Stop',$args,$filter);
     }
     /***************************************************************************
-    /* Funktion : GetStatusInfo
-    /* 
-    /*  Benoetigt: Nichts
-    /*
-    /*  Liefert als Ergebnis: Array mit folgenden Keys
-    /*          @NewConnectionStatus (string)  => Auswahl: Unconfigured|Connecting|Authenticating|PendingDisconnect|Disconnecting|Disconnected|Connected
-    /*          @NewLastConnectionError (string)  => Auswahl: ERROR_NONE|ERROR_ISP_TIME_OUT|ERROR_COMMAND_ABORTED|ERROR_NOT_ENABLED_FOR_INTERNET|ERROR_BAD_PHONE_NUMBER|ERROR_USER_DISCONNECT|ERROR_ISP_DISCONNECT|ERROR_IDLE_DISCONNECT|ERROR_FORCED_DISCONNECT|ERROR_SERVER_OUT_OF_RESOURCES|ERROR_RESTRICTED_LOGON_HOURS|ERROR_ACCOUNT_DISABLED|ERROR_ACCOUNT_EXPIRED|ERROR_PASSWORD_EXPIRED|ERROR_AUTHENTICATION_FAILURE|ERROR_NO_DIALTONE|ERROR_NO_CARRIER|ERROR_NO_ANSWER|ERROR_LINE_BUSY|ERROR_UNSUPPORTED_BITSPERSECOND|ERROR_TOO_MANY_LINE_ERRORS|ERROR_IP_CONFIGURATION|ERROR_UNKNOWN
-    /*          @NewUptime (ui4) 
-    /*
-    /****************************************************************************/
-    public function GetStatusInfo(){
-        $args="";
-        $filter="NewConnectionStatus,NewLastConnectionError,NewUptime";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'GetStatusInfo',$args,$filter);
-    }
-    /***************************************************************************
-    /* Funktion : GetNATRSIPStatus
-    /* 
-    /*  Benoetigt: Nichts
-    /*
-    /*  Liefert als Ergebnis: Array mit folgenden Keys
-    /*          @NewRSIPAvailable (boolean) 
-    /*          @NewNATEnabled (boolean) 
-    /*
-    /****************************************************************************/
-    public function GetNATRSIPStatus(){
-        $args="";
-        $filter="NewRSIPAvailable,NewNATEnabled";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'GetNATRSIPStatus',$args,$filter);
-    }
-    /***************************************************************************
-    /* Funktion : GetGenericPortMappingEntry
+    /* Funktion : Play
     /* 
     /*  Benoetigt:
-    /*          @NewPortMappingIndex (ui2) 
-    /*
-    /*  Liefert als Ergebnis: Array mit folgenden Keys
-    /*          @NewRemoteHost (string) 
-    /*          @NewExternalPort (ui2) 
-    /*          @NewProtocol (string)  => Auswahl: TCP|UDP
-    /*          @NewInternalPort (ui2) 
-    /*          @NewInternalClient (string) 
-    /*          @NewEnabled (boolean) 
-    /*          @NewPortMappingDescription (string) 
-    /*          @NewLeaseDuration (ui4) 
-    /*
-    /****************************************************************************/
-    public function GetGenericPortMappingEntry($NewPortMappingIndex){
-        $args="<NewPortMappingIndex>$NewPortMappingIndex</NewPortMappingIndex>";
-        $filter="NewRemoteHost,NewExternalPort,NewProtocol,NewInternalPort,NewInternalClient,NewEnabled,NewPortMappingDescription,NewLeaseDuration";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'GetGenericPortMappingEntry',$args,$filter);
-    }
-    /***************************************************************************
-    /* Funktion : GetSpecificPortMappingEntry
-    /* 
-    /*  Benoetigt:
-    /*          @NewRemoteHost (string) 
-    /*          @NewExternalPort (ui2) 
-    /*          @NewProtocol (string)  => Auswahl: TCP|UDP
-    /*
-    /*  Liefert als Ergebnis: Array mit folgenden Keys
-    /*          @NewInternalPort (ui2) 
-    /*          @NewInternalClient (string) 
-    /*          @NewEnabled (boolean) 
-    /*          @NewPortMappingDescription (string) 
-    /*          @NewLeaseDuration (ui4) 
-    /*
-    /****************************************************************************/
-    public function GetSpecificPortMappingEntry($NewRemoteHost, $NewExternalPort, $NewProtocol){
-        $args="<NewRemoteHost>$NewRemoteHost</NewRemoteHost><NewExternalPort>$NewExternalPort</NewExternalPort><NewProtocol>$NewProtocol</NewProtocol>";
-        $filter="NewInternalPort,NewInternalClient,NewEnabled,NewPortMappingDescription,NewLeaseDuration";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'GetSpecificPortMappingEntry',$args,$filter);
-    }
-    /***************************************************************************
-    /* Funktion : AddPortMapping
-    /* 
-    /*  Benoetigt:
-    /*          @NewRemoteHost (string) 
-    /*          @NewExternalPort (ui2) 
-    /*          @NewProtocol (string)  => Auswahl: TCP|UDP
-    /*          @NewInternalPort (ui2) 
-    /*          @NewInternalClient (string) 
-    /*          @NewEnabled (boolean) 
-    /*          @NewPortMappingDescription (string) 
-    /*          @NewLeaseDuration (ui4) 
+    /*          @InstanceID (ui4) Vorgabe = 0 
+    /*          @Speed (string) Vorgabe = 1  => Auswahl: 1
     /*
     /*  Liefert als Ergebnis: Nichts
     /*
     /****************************************************************************/
-    public function AddPortMapping($NewRemoteHost, $NewExternalPort, $NewProtocol, $NewInternalPort, $NewInternalClient, $NewEnabled, $NewPortMappingDescription, $NewLeaseDuration){
-        $args="<NewRemoteHost>$NewRemoteHost</NewRemoteHost><NewExternalPort>$NewExternalPort</NewExternalPort><NewProtocol>$NewProtocol</NewProtocol><NewInternalPort>$NewInternalPort</NewInternalPort><NewInternalClient>$NewInternalClient</NewInternalClient><NewEnabled>$NewEnabled</NewEnabled><NewPortMappingDescription>$NewPortMappingDescription</NewPortMappingDescription><NewLeaseDuration>$NewLeaseDuration</NewLeaseDuration>";
+    public function Play($InstanceID=0, $Speed=1){
+        $args="<InstanceID>$InstanceID</InstanceID><Speed>$Speed</Speed>";
         $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'AddPortMapping',$args,$filter);
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'Play',$args,$filter);
     }
     /***************************************************************************
-    /* Funktion : DeletePortMapping
+    /* Funktion : Pause
     /* 
     /*  Benoetigt:
-    /*          @NewRemoteHost (string) 
-    /*          @NewExternalPort (ui2) 
-    /*          @NewProtocol (string)  => Auswahl: TCP|UDP
+    /*          @InstanceID (ui4) Vorgabe = 0 
     /*
     /*  Liefert als Ergebnis: Nichts
     /*
     /****************************************************************************/
-    public function DeletePortMapping($NewRemoteHost, $NewExternalPort, $NewProtocol){
-        $args="<NewRemoteHost>$NewRemoteHost</NewRemoteHost><NewExternalPort>$NewExternalPort</NewExternalPort><NewProtocol>$NewProtocol</NewProtocol>";
+    public function Pause($InstanceID=0){
+        $args="<InstanceID>$InstanceID</InstanceID>";
         $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'DeletePortMapping',$args,$filter);
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'Pause',$args,$filter);
     }
     /***************************************************************************
-    /* Funktion : GetExternalIPAddress
+    /* Funktion : Seek
     /* 
-    /*  Benoetigt: Nichts
+    /*  Benoetigt:
+    /*          @InstanceID (ui4) Vorgabe = 0 
+    /*          @Unit (string)  => Auswahl: TRACK_NR|REL_TIME
+    /*          @Target (string) 
+    /*
+    /*  Liefert als Ergebnis: Nichts
+    /*
+    /****************************************************************************/
+    public function Seek($Unit, $Target, $InstanceID=0){
+        $args="<InstanceID>$InstanceID</InstanceID><Unit>$Unit</Unit><Target>$Target</Target>";
+        $filter="";
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'Seek',$args,$filter);
+    }
+    /***************************************************************************
+    /* Funktion : Next
+    /* 
+    /*  Benoetigt:
+    /*          @InstanceID (ui4) Vorgabe = 0 
+    /*
+    /*  Liefert als Ergebnis: Nichts
+    /*
+    /****************************************************************************/
+    public function Next($InstanceID=0){
+        $args="<InstanceID>$InstanceID</InstanceID>";
+        $filter="";
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'Next',$args,$filter);
+    }
+    /***************************************************************************
+    /* Funktion : Previous
+    /* 
+    /*  Benoetigt:
+    /*          @InstanceID (ui4) Vorgabe = 0 
+    /*
+    /*  Liefert als Ergebnis: Nichts
+    /*
+    /****************************************************************************/
+    public function Previous($InstanceID=0){
+        $args="<InstanceID>$InstanceID</InstanceID>";
+        $filter="";
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'Previous',$args,$filter);
+    }
+    /***************************************************************************
+    /* Funktion : SetPlayMode
+    /* 
+    /*  Benoetigt:
+    /*          @InstanceID (ui4) Vorgabe = 0 
+    /*          @NewPlayMode (string)  => Auswahl: NORMAL|RANDOM|REPEAT_ONE|REPEAT_ALL
+    /*
+    /*  Liefert als Ergebnis: Nichts
+    /*
+    /****************************************************************************/
+    public function SetPlayMode($NewPlayMode, $InstanceID=0){
+        $args="<InstanceID>$InstanceID</InstanceID><NewPlayMode>$NewPlayMode</NewPlayMode>";
+        $filter="";
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetPlayMode',$args,$filter,$NewPlayMode);
+    }
+    /***************************************************************************
+    /* Funktion : GetCurrentTransportActions
+    /* 
+    /*  Benoetigt:
+    /*          @InstanceID (ui4) Vorgabe = 0 
     /*
     /*  Liefert als Ergebnis:
-    /*          @NewExternalIPAddress (string) 
+    /*          @Actions (string) 
     /*
     /****************************************************************************/
-    public function GetExternalIPAddress(){
+    public function GetCurrentTransportActions($InstanceID=0){
+        $args="<InstanceID>$InstanceID</InstanceID>";
+        $filter="Actions";
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'GetCurrentTransportActions',$args,$filter);
+    }
+    /***************************************************************************
+    /* Funktion : X_GetOperationList
+    /* 
+    /*  Benoetigt:
+    /*          @AVTInstanceID (ui4) 
+    /*
+    /*  Liefert als Ergebnis:
+    /*          @OperationList (string) 
+    /*
+    /****************************************************************************/
+    public function X_GetOperationList($AVTInstanceID){
+        $args="<AVTInstanceID>$AVTInstanceID</AVTInstanceID>";
+        $filter="OperationList";
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'X_GetOperationList',$args,$filter);
+    }
+    /***************************************************************************
+    /* Funktion : X_ExecuteOperation
+    /* 
+    /*  Benoetigt:
+    /*          @AVTInstanceID (ui4) 
+    /*          @ActionDirective (string) 
+    /*
+    /*  Liefert als Ergebnis:
+    /*          @Result (string) 
+    /*
+    /****************************************************************************/
+    public function X_ExecuteOperation($AVTInstanceID, $ActionDirective){
+        $args="<AVTInstanceID>$AVTInstanceID</AVTInstanceID><ActionDirective>$ActionDirective</ActionDirective>";
+        $filter="Result";
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'X_ExecuteOperation',$args,$filter);
+    }}
+
+/*##########################################################################*/
+/*  Class  : IRCC 
+/*  Service: urn:schemas-sony-com:service:IRCC:1
+/*	     Id: urn:schemas-sony-com:serviceId:IRCC 
+/*##########################################################################*/
+class SonyIRCC extends SonyUpnpClass {
+    protected $SERVICE='urn:schemas-sony-com:service:IRCC:1';
+    protected $SERVICEURL='/upnp/control/IRCC';
+    protected $EVENTURL='';
+    /***************************************************************************
+    /* Funktion : X_SendIRCC
+    /* 
+    /*  Benoetigt:
+    /*          @IRCCCode (string) 
+    /*
+    /*  Liefert als Ergebnis: Nichts
+    /*
+    /****************************************************************************/
+    public function X_SendIRCC($IRCCCode){
+        $args="<IRCCCode>$IRCCCode</IRCCCode>";
+        $filter="";
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'X_SendIRCC',$args,$filter);
+    }
+    /***************************************************************************
+    /* Funktion : X_GetStatus
+    /* 
+    /*  Benoetigt:
+    /*          @CategoryCode (string) 
+    /*
+    /*  Liefert als Ergebnis: Array mit folgenden Keys
+    /*          @CurrentStatus (string)  => Auswahl: 0|801|804|805|806
+    /*          @CurrentCommandInfo (string) 
+    /*
+    /****************************************************************************/
+    public function X_GetStatus($CategoryCode){
+        $args="<CategoryCode>$CategoryCode</CategoryCode>";
+        $filter="CurrentStatus,CurrentCommandInfo";
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'X_GetStatus',$args,$filter);
+    }}
+
+/*##########################################################################*/
+/*  Class  : X_Tandem 
+/*  Service: urn:schemas-sony-com:service:X_Tandem:1
+/*	     Id: urn:schemas-sony-com:serviceId:X_Tandem 
+/*##########################################################################*/
+class SonyX_Tandem extends SonyUpnpClass {
+    protected $SERVICE='urn:schemas-sony-com:service:X_Tandem:1';
+    protected $SERVICEURL='/upnp/control/TANDEM';
+    protected $EVENTURL='';
+    /***************************************************************************
+    /* Funktion : X_Tandem
+    /* 
+    /*  Benoetigt: Nichts
+    /*
+    /*  Liefert als Ergebnis: Nichts
+    /*
+    /****************************************************************************/
+    public function X_Tandem(){
         $args="";
-        $filter="NewExternalIPAddress";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'GetExternalIPAddress',$args,$filter);
+        $filter="";
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'X_Tandem',$args,$filter);
+    }}
+
+/*##########################################################################*/
+/*  Class  : X_CIS 
+/*  Service: urn:schemas-sony-com:service:X_CIS:1
+/*	     Id: urn:schemas-sony-com:serviceId:X_CIS 
+/*##########################################################################*/
+class SonyX_CIS extends SonyUpnpClass {
+    protected $SERVICE='urn:schemas-sony-com:service:X_CIS:1';
+    protected $SERVICEURL='/upnp/control/CIS';
+    protected $EVENTURL='/upnp/event/CIS';
+    /***************************************************************************
+    /* Funktion : X_CIS_Command
+    /* 
+    /*  Benoetigt:
+    /*          @CISDATA (string) 
+    /*
+    /*  Liefert als Ergebnis:
+    /*          @Res_CISDATA (string) 
+    /*
+    /****************************************************************************/
+    public function X_CIS_Command($CISDATA){
+        $args="<CISDATA>$CISDATA</CISDATA>";
+        $filter="Res_CISDATA";
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'X_CIS_Command',$args,$filter);
     }}
 
 ?>
