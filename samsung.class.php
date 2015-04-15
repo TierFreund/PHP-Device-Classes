@@ -1,4 +1,48 @@
 <?
+if(!function_exists('array_value')){
+	function array_value($array, $key ){
+		foreach($array as $k=>$v){
+			if($k==$key) return $v;
+			if(is_array($v)) return array_value($v,$key);
+		}
+		return false;	
+	}    
+}	
+if(!function_exists('unserialize_xml')){
+	function unserialize_xml($input, $callback = null, $noAttributes=false, $recurse = false){
+		$data = ((!$recurse) && is_string($input))? simplexml_load_string($input): $input;
+		if ($data instanceof SimpleXMLElement) $data = (array) $data;
+		if (is_array($data)) foreach ($data as $k=>&$item){
+			if($noAttributes&&$k=='@attributes'){unset($data[$k]);continue;}
+			$item = unserialize_xml($item, $callback, $noAttributes, true);
+		}
+		return (!is_array($data) && is_callable($callback))? call_user_func($callback, $data): $data;
+	}
+}
+if(!function_exists('xmlrpc_device_request')){
+	function xmlrpc_device_request($ControlURL,$SOAP_service, $SOAP_action, $SOAP_arguments = '',$XML_filter = '', $ReturnValue=true ,$ip,$port){
+		$header = "POST $ControlURL HTTP/1.1\r\nHOST: $ip:$port\r\nCONTENT-TYPE: text/xml; charset='utf-8'\r\nSOAPACTION: \"$SOAP_service#$SOAP_action\"\r\nCONNECTION: close";
+		$xml = '<?xml version="1.0" encoding="utf-8"?><s:Envelope s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" xmlns:s="http://schemas.xmlsoap.org/soap/envelope/"><s:Body><u:'.$SOAP_action.' xmlns:u="'.$SOAP_service.'">'.$SOAP_arguments.'</u:'.$SOAP_action.'></s:Body></s:Envelope>';
+		$content = $header . "\r\nCONTENT-LENGTH: ".strlen($xml) ."\r\n\r\n$xml";
+		$fp = fsockopen($ip, $port, $errno, $errstr, 5);
+		if (!$fp)return null;
+		fputs ($fp, $content);
+		$buffer = stream_get_contents($fp, -1);
+		fclose($fp);
+		if(strpos($buffer, "200 OK") === false)return null;
+		//Header abtrennen
+		list($header,$message)=explode("\r\n\r\n", $buffer);
+		$xml=null;
+        if ($XML_filter != '')return Filter($message,$XML_filter);
+
+		$message=str_replace(array('s:','u:'),'',$message);
+		if($xml=simplexml_load_string($message)){
+			$xml=unserialize_xml($xml->children(),null,true);
+			if($k=array_value($xml,$SOAP_action.'Response'))$xml=array_shift($k);
+		}	
+		return !is_null($xml)?$xml:$ReturnValue;
+	}	
+}
 //---------------------------------------------------------------------------/
 //	
 //  
@@ -89,30 +133,7 @@ class SamsungXmlRpcDevice {
     /*
     /****************************************************************************/
     public function Upnp($url,$SOAP_service,$SOAP_action,$SOAP_arguments = '',$XML_filter = '', $ReturnValue=true){
-        $POST_xml = '<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">';
-        $POST_xml .= '<s:Body>';
-        $POST_xml .= '<u:'.$SOAP_action.' xmlns:u="'.$SOAP_service.'">';
-        $POST_xml .= $SOAP_arguments;
-        $POST_xml .= '</u:'.$SOAP_action.'>';
-        $POST_xml .= '</s:Body>';
-        $POST_xml .= '</s:Envelope>';
-        $POST_url = $this->_IP.":".$this->_PORT.$url;
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
-        curl_setopt($ch, CURLOPT_URL, $POST_url);
-        curl_setopt($ch, CURLOPT_HEADER, 0);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array("Content-Type: text/xml", "SOAPAction: ".$SOAP_service."#".$SOAP_action));
-        curl_setopt($ch, CURLOPT_POST, 1);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $POST_xml);
-        $r = curl_exec($ch);
-        curl_close($ch);
-        if ($XML_filter != '')
-            return $this->Filter($r,$XML_filter);
-        else
-            return $r===false?null:$ReturnValue;
+		return xmlrpc_device_request($url,$SOAP_service,$SOAP_action,$SOAP_arguments,$XML_filter,$ReturnValue,$this->_IP,$this->_PORT);
     }
     /***************************************************************************
     /* Funktion : Filter
@@ -1003,5 +1024,6 @@ class SamsungAVTransport extends SamsungUpnpClass {
         $filter="";
         return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'X_SetSlideShowEffectHint',$args,$filter);
     }}
+
 
 ?>

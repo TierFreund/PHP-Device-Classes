@@ -16,7 +16,7 @@ $r=$c->GetServices();
 print_r($r);
 */
 
-class EnigmaUpnpDevice {
+class EnigmaXmlRpcDevice {
 
 	public function __construct($url){
 		$this->url=$url;
