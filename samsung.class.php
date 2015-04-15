@@ -19,6 +19,22 @@ if(!function_exists('unserialize_xml')){
 		return (!is_array($data) && is_callable($callback))? call_user_func($callback, $data): $data;
 	}
 }
+if(!function_exists('Filter')){
+   function Filter($subject,$pattern){
+        $multi=is_array($pattern);
+        if(!$multi){
+            $pattern=explode(',',$pattern);
+            $multi=(count($pattern)>1);
+        }	
+        foreach($pattern as $pat){
+            if(!$pat)continue;
+            preg_match('/\<'.$pat.'\>(.+)\<\/'.$pat.'\>/',$subject,$matches);
+            if($multi)$n[$pat]=(isSet($matches[1]))?$matches[1]:false;
+            else return (isSet($matches[1]))?$matches[1]:false;
+        }	
+        return $n;
+    }
+} 
 if(!function_exists('xmlrpc_device_request')){
 	function xmlrpc_device_request($ControlURL,$SOAP_service, $SOAP_action, $SOAP_arguments = '',$XML_filter = '', $ReturnValue=true ,$ip,$port){
 		$header = "POST $ControlURL HTTP/1.1\r\nHOST: $ip:$port\r\nCONTENT-TYPE: text/xml; charset='utf-8'\r\nSOAPACTION: \"$SOAP_service#$SOAP_action\"\r\nCONNECTION: close";
@@ -29,19 +45,16 @@ if(!function_exists('xmlrpc_device_request')){
 		fputs ($fp, $content);
 		$buffer = stream_get_contents($fp, -1);
 		fclose($fp);
-		if(strpos($buffer, "200 OK") === false)return null;
+		if(strpos($buffer, "200 OK") === false){
+			return null;
+		}
 		//Header abtrennen
 		list($header,$message)=explode("\r\n\r\n", $buffer);
 		$xml=null;
         if ($XML_filter != '')return Filter($message,$XML_filter);
-
-		$message=str_replace(array('s:','u:'),'',$message);
-		if($xml=simplexml_load_string($message)){
-			$xml=unserialize_xml($xml->children(),null,true);
-			if($k=array_value($xml,$SOAP_action.'Response'))$xml=array_shift($k);
-		}	
-		return !is_null($xml)?$xml:$ReturnValue;
-	}	
+//echo "Error: $ReturnValue";
+		return $ReturnValue;
+	}
 }
 //---------------------------------------------------------------------------/
 //	
@@ -352,7 +365,7 @@ class SamsungUpnpClass {
     /****************************************************************************/
     public function UnRegisterEventCallback($SID){ 
         if(!$this->EVENTURL)return false;	
-        $content="UNSUBSCRIBE {$this->EVENTURL} HTTP/1.1\nHOST: ".$this->BASE->GetBaseUrl()."\nSID: $SID\nContent-Length: 0\n\n";
+        $content="UNSUBSCRIBE {$this->EVENTURL} HTTP/1.1\r\nHOST: ".$this->BASE->GetBaseUrl()."\r\nSID: $SID\nContent-Length: 0\r\n\r\n";
         return $this->BASE->sendPacket($content);
     }
 }

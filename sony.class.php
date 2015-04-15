@@ -29,6 +29,40 @@ if(!function_exists('unserialize_xml')){
 		return (!is_array($data) && is_callable($callback))? call_user_func($callback, $data): $data;
 	}
 }
+if(!function_exists('Filter')){
+   function Filter($subject,$pattern){
+        $multi=is_array($pattern);
+        if(!$multi){
+            $pattern=explode(',',$pattern);
+            $multi=(count($pattern)>1);
+        }	
+        foreach($pattern as $pat){
+            if(!$pat)continue;
+            preg_match('/\<'.$pat.'\>(.+)\<\/'.$pat.'\>/',$subject,$matches);
+            if($multi)$n[$pat]=(isSet($matches[1]))?$matches[1]:false;
+            else return (isSet($matches[1]))?$matches[1]:false;
+        }	
+        return $n;
+    }
+} 
+if(!function_exists('xmlrpc_device_request')){
+	function xmlrpc_device_request($ControlURL,$SOAP_service, $SOAP_action, $SOAP_arguments = '',$XML_filter = '', $ReturnValue=true ,$ip,$port){
+		$header = "POST $ControlURL HTTP/1.1\r\nHOST: $ip:$port\r\nCONTENT-TYPE: text/xml; charset='utf-8'\r\nSOAPACTION: \"$SOAP_service#$SOAP_action\"\r\nCONNECTION: close";
+		$xml = '<?xml version="1.0" encoding="utf-8"?><s:Envelope s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" xmlns:s="http://schemas.xmlsoap.org/soap/envelope/"><s:Body><u:'.$SOAP_action.' xmlns:u="'.$SOAP_service.'">'.$SOAP_arguments.'</u:'.$SOAP_action.'></s:Body></s:Envelope>';
+		$content = $header . "\r\nCONTENT-LENGTH: ".strlen($xml) ."\r\n\r\n$xml";
+		$fp = fsockopen($ip, $port, $errno, $errstr, 5);
+		if (!$fp)return null;
+		fputs ($fp, $content);
+		$buffer = stream_get_contents($fp, -1);
+		fclose($fp);
+//echo "Return $SOAP_arguments : $buffer";		
+		if(strpos($buffer, "200 OK") === false)return null;
+		//Header abtrennen
+		list($header,$message)=explode("\r\n\r\n", $buffer);
+	    if ($XML_filter != '')return Filter($message,$XML_filter);
+		return $ReturnValue;
+	}	
+}
 /*##########################################################################/
 /*  Class  : SonyXmlRpcDevice 
 /*  Desc   : Master Class to Controll Device 
@@ -110,52 +144,8 @@ class SonyXmlRpcDevice {
     /*    @result (string|array) => The XML Soap Result
     /*
     /****************************************************************************/
-    public function Upnp($ControlURL,$SOAP_service,$SOAP_action,$SOAP_arguments = '',$XML_filter = '', $ReturnValue=true){
-		$header = 'POST '.$ControlURL.' HTTP/1.1
-HOST: '.$this->_IP.':'.$this->_PORT.'
-CONTENT-TYPE: text/xml; charset="utf-8"
-SOAPACTION: "'.$SOAP_service.'#'.$SOAP_action.'"
-CONNECTION: close';
-		$xml = '<?xml version="1.0" encoding="utf-8"?>
-<s:Envelope s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
- <s:Body>
-  <u:'.$SOAP_action.' xmlns:u="'.$SOAP_service.'">
-  '.$SOAP_arguments.'
-   </u:'.$SOAP_action.'>
- </s:Body>
-</s:Envelope>';
-		$content = $header . '
-CONTENT-LENGTH: '.strlen($xml) .'
-
-'. $xml;
-		
-		$fp = fsockopen($this->_IP, $this->_PORT, $errno, $errstr, 5);
-		if (!$fp){
-			return null;
-		}else{
-			fputs ($fp, $content);
-			$buffer = stream_get_contents($fp, -1);
-			fclose($fp);
-		}
-
-		if(strpos($buffer, "200 OK") === false){
-			return null;
-		}
-		//Header abtrennen
-		list($header,$message)=explode("\r\n\r\n", $buffer);
-		$xml=null;
-        if ($XML_filter != '')
-            return Filter($message,$XML_filter);
-        else {
-			$message=str_replace(array('s:','u:'),'',$message);
-			if($xml=simplexml_load_string($message)){
-				$xml=unserialize_xml($xml->children(),null,true);
-				if($k=array_value($xml,$SOAP_action.'Response')){
-					$xml=array_shift($k);
-				}
-			}	
-            return !is_null($xml)?$xml:$ReturnValue;
-		}
+    public function Upnp($url,$SOAP_service,$SOAP_action,$SOAP_arguments = '',$XML_filter = '', $ReturnValue=true){
+		return xmlrpc_device_request($url,$SOAP_service,$SOAP_action,$SOAP_arguments,$XML_filter,$ReturnValue,$this->_IP,$this->_PORT);
     }
     /***************************************************************************
     /* Funktion : Filter
