@@ -1,0 +1,75 @@
+<?
+--------------------------------------------------
+Verwendete Variablen Typen & Anzahl
+   ui4             : 25
+   string          : 66
+   boolean         : 2
+   ui2             : 2
+   i4              : 6
+   object          : 1
+   int             : 2
+   string|array    : 1
+   string|stringlist|array of strings : 1
+   variant         : 1
+--------------------------------------------------
+Service : RenderingControl
+--------------------------------------------------
+ ListPresets( InstanceID(ui4)) RETURNS CurrentPresetNameList(string)
+ SelectPreset( InstanceID(ui4), PresetName(string)=[FactoryDefaults])
+ GetMute( InstanceID(ui4), Channel(string)=[Master]) RETURNS CurrentMute(boolean)
+ SetMute( InstanceID(ui4), Channel(string)=[Master], DesiredMute(boolean))
+ GetVolume( InstanceID(ui4), Channel(string)=[Master]) RETURNS CurrentVolume(ui2)
+ SetVolume( InstanceID(ui4), Channel(string)=[Master], DesiredVolume(ui2))
+--------------------------------------------------
+Service : ConnectionManager
+--------------------------------------------------
+ GetProtocolInfo( ) RETURNS Source(string), Sink(string)
+ GetCurrentConnectionIDs( ) RETURNS ConnectionIDs(string)
+ GetCurrentConnectionInfo( ConnectionID(i4)) RETURNS RcsID(i4), AVTransportID(i4), ProtocolInfo(string), PeerConnectionManager(string), PeerConnectionID(i4), Direction(string)=[Input|Output], Status(string)=[OK|ContentFormatMismatch|InsufficientBandwidth|UnreliableChannel|Unknown]
+--------------------------------------------------
+Service : AVTransport
+--------------------------------------------------
+ SetAVTransportURI( InstanceID(ui4), CurrentURI(string), CurrentURIMetaData(string))
+ SetNextAVTransportURI( InstanceID(ui4), NextURI(string), NextURIMetaData(string))
+ GetMediaInfo( InstanceID(ui4)) RETURNS NrTracks(ui4), MediaDuration(string), CurrentURI(string), CurrentURIMetaData(string), NextURI(string), NextURIMetaData(string), PlayMedium(string)=[NETWORK], RecordMedium(string)=[NOT_IMPLEMENTED], WriteStatus(string)=[NOT_IMPLEMENTED]
+ GetTransportInfo( InstanceID(ui4)) RETURNS CurrentTransportState(string)=[STOPPED|PLAYING|PAUSED_PLAYBACK|TRANSITIONING|NO_MEDIA_PRESENT], CurrentTransportStatus(string)=[OK|ERROR_OCCURRED], CurrentSpeed(string)=[1]
+ GetPositionInfo( InstanceID(ui4)) RETURNS Track(ui4), TrackDuration(string), TrackMetaData(string), TrackURI(string), RelTime(string), AbsTime(string), RelCount(i4), AbsCount(i4)
+ GetDeviceCapabilities( InstanceID(ui4)) RETURNS PlayMedia(string), RecMedia(string), RecQualityModes(string)
+ GetTransportSettings( InstanceID(ui4)) RETURNS PlayMode(string)=[NORMAL|RANDOM|REPEAT_ONE|REPEAT_ALL], RecQualityMode(string)=[NOT_IMPLEMENTED]
+ Stop( InstanceID(ui4))
+ Play( InstanceID(ui4), Speed(string)=[1])
+ Pause( InstanceID(ui4))
+ Seek( InstanceID(ui4), Unit(string)=[TRACK_NR|REL_TIME], Target(string))
+ Next( InstanceID(ui4))
+ Previous( InstanceID(ui4))
+ SetPlayMode( InstanceID(ui4), NewPlayMode(string)=[NORMAL|RANDOM|REPEAT_ONE|REPEAT_ALL])
+ GetCurrentTransportActions( InstanceID(ui4)) RETURNS Actions(string)
+ X_GetOperationList( AVTInstanceID(ui4)) RETURNS OperationList(string)
+ X_ExecuteOperation( AVTInstanceID(ui4), ActionDirective(string)) RETURNS Result(string)
+--------------------------------------------------
+Service : IRCC
+--------------------------------------------------
+ X_SendIRCC( IRCCCode(string))
+ X_GetStatus( CategoryCode(string)) RETURNS CurrentStatus(string)=[0|801|804|805|806], CurrentCommandInfo(string)
+--------------------------------------------------
+Service : X_Tandem
+--------------------------------------------------
+ X_Tandem( )
+--------------------------------------------------
+Service : X_CIS
+--------------------------------------------------
+ X_CIS_Command( CISDATA(string)) RETURNS Res_CISDATA(string)
+--------------------------------------------------
+Service : SonyPlayerUpnpClass
+--------------------------------------------------
+ __construct( BASE(object), SERVICE(string), SERVICEURL(string), EVENTURL(string))
+ RegisterEventCallback( callback_url(string), timeout(int)=3600) RETURNS SID(string), TIMEOUT(int), Server(string)
+ UnRegisterEventCallback( SID(string))
+--------------------------------------------------
+Service : SonyPlayerUpnpDevice
+--------------------------------------------------
+ __construct( url(string))
+ Upnp( url(string), SOAP_service(string), SOAP_action(string), SOAP_arguments(string), XML_filter(string)) RETURNS result(string|array)
+ Filter( subject(string), pattern(string|stringlist|array of strings)) RETURNS result(variant)
+
+?>

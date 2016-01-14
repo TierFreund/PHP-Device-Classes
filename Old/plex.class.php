@@ -3,22 +3,23 @@
 	
 File:  
 	Desc     : PHP Classes to Control Plex Media Server 
-	Date     : 2015-01-30T12:41:16+01:00
+	Date     : 2015-03-22T22:30:51+01:00
 	Version  : 1.00.45
 	Publisher: (c)2015 Xaver Bauer 
 	Contact  : x.bauer@tier-freunde.net
 
 Device:
 	Device Type  : urn:schemas-upnp-org:device:MediaServer:1
-	URL 		 : http://192.168.xxx.xxx:32469/DeviceDescription.xml	
-	Friendly Name: Plex Media Server: nas
+	URL 		 : http://192.168.112.1:32469/DeviceDescription.xml	
+	Friendly Name: Plex Media Server: Multimedia Server
 	Manufacturer : Plex, Inc.
 	URL 		 : http://www.plexapp.com/
 	Model        : Plex Media Server
 	Name 		 : Plex Media Server
-	Number 		 : 0.9.9.10
+	Number 		 : 0.9.11.14
 	URL 		 : http://www.plexapp.com/
 	Serialnumber : 
+	UDN          : uuid:1e9f9d14-f975-765b-bdd8-5e3e8deef9ae
 
 /*--------------------------------------------------------------------------*/
 /*##########################################################################/
@@ -34,12 +35,12 @@ class PlexUpnpDevice {
     protected $_SERVICES=null;
     protected $_DEVICES=null;
     protected $_IP='';
-    protected $_PORT=1400;
+    protected $_PORT=32469;
     /***************************************************************************
     /* Funktion : __construct
     /* 
     /*  Benoetigt:
-    /*    @url (string)  Device Url eg. '192.168.1.1:1400'
+    /*    @url (string)  Device Url eg. '192.168.112.1:32469'
     /*
     /*  Liefert als Ergebnis: Nichts
     /*
@@ -47,7 +48,7 @@ class PlexUpnpDevice {
     public function __construct($url){
         $p=parse_url($url);
         $this->_IP=(isSet($p['host']))?$p['host']:$url;
-        $this->_PORT=(isSet($p['port']))?$p['port']:1400;
+        $this->_PORT=(isSet($p['port']))?$p['port']:32469;
         $this->_SERVICES=new stdClass();
         $this->_DEVICES=new stdClass();
         $this->_SERVICES->X_MS_MediaReceiverRegistrar=new PlexX_MS_MediaReceiverRegistrar($this);
@@ -68,12 +69,12 @@ class PlexUpnpDevice {
     /****************************************************************************/
     function GetIcon($id) {
         switch($id){
-            case 0 : return array('width'=>260,'height'=>260,'url'=>'http://192.168.112.18:32469/proxy/027d672c6a70ab72aa7c/260x260.png');break;
-            case 1 : return array('width'=>120,'height'=>120,'url'=>'http://192.168.112.18:32469/proxy/74b2fce849107951c424/120x120.png');break;
-            case 2 : return array('width'=>48,'height'=>48,'url'=>'http://192.168.112.18:32469/proxy/23b1739a6c33d02bf0ba/48x48.png');break;
-            case 3 : return array('width'=>260,'height'=>260,'url'=>'http://192.168.112.18:32469/proxy/e2ba69ed701bbef38438/260x260.jpg');break;
-            case 4 : return array('width'=>120,'height'=>120,'url'=>'http://192.168.112.18:32469/proxy/ae306aa36533cd3e14b4/120x120.jpg');break;
-            case 5 : return array('width'=>48,'height'=>48,'url'=>'http://192.168.112.18:32469/proxy/f5095c764513b3c19c6b/48x48.jpg');break;
+            case 0 : return array('width'=>260,'height'=>260,'url'=>'http://192.168.112.1:32469/proxy/027d672c6a70ab72aa7c/260x260.png');break;
+            case 1 : return array('width'=>120,'height'=>120,'url'=>'http://192.168.112.1:32469/proxy/74b2fce849107951c424/120x120.png');break;
+            case 2 : return array('width'=>48,'height'=>48,'url'=>'http://192.168.112.1:32469/proxy/23b1739a6c33d02bf0ba/48x48.png');break;
+            case 3 : return array('width'=>260,'height'=>260,'url'=>'http://192.168.112.1:32469/proxy/e2ba69ed701bbef38438/260x260.jpg');break;
+            case 4 : return array('width'=>120,'height'=>120,'url'=>'http://192.168.112.1:32469/proxy/ae306aa36533cd3e14b4/120x120.jpg');break;
+            case 5 : return array('width'=>48,'height'=>48,'url'=>'http://192.168.112.1:32469/proxy/f5095c764513b3c19c6b/48x48.jpg');break;
         }
         return array('width'=>0,'height'=>0,'url'=>'');
     }
@@ -356,8 +357,8 @@ class PlexUpnpClass {
 /*##########################################################################*/
 class PlexX_MS_MediaReceiverRegistrar extends PlexUpnpClass {
     protected $SERVICE='urn:microsoft.com:service:X_MS_MediaReceiverRegistrar:1';
-    protected $SERVICEURL='/X_MS_MediaReceiverRegistrar/5494da7a-be7b-f642-dbc3-fa922411b037/control.xml';
-    protected $EVENTURL='/X_MS_MediaReceiverRegistrar/5494da7a-be7b-f642-dbc3-fa922411b037/event.xml';
+    protected $SERVICEURL='/X_MS_MediaReceiverRegistrar/1e9f9d14-f975-765b-bdd8-5e3e8deef9ae/control.xml';
+    protected $EVENTURL='/X_MS_MediaReceiverRegistrar/1e9f9d14-f975-765b-bdd8-5e3e8deef9ae/event.xml';
     /***************************************************************************
     /* Funktion : IsAuthorized
     /* 
@@ -411,8 +412,8 @@ class PlexX_MS_MediaReceiverRegistrar extends PlexUpnpClass {
 /*##########################################################################*/
 class PlexContentDirectory extends PlexUpnpClass {
     protected $SERVICE='urn:schemas-upnp-org:service:ContentDirectory:1';
-    protected $SERVICEURL='/ContentDirectory/5494da7a-be7b-f642-dbc3-fa922411b037/control.xml';
-    protected $EVENTURL='/ContentDirectory/5494da7a-be7b-f642-dbc3-fa922411b037/event.xml';
+    protected $SERVICEURL='/ContentDirectory/1e9f9d14-f975-765b-bdd8-5e3e8deef9ae/control.xml';
+    protected $EVENTURL='/ContentDirectory/1e9f9d14-f975-765b-bdd8-5e3e8deef9ae/event.xml';
     /***************************************************************************
     /* Funktion : Browse
     /* 
@@ -486,8 +487,8 @@ class PlexContentDirectory extends PlexUpnpClass {
 /*##########################################################################*/
 class PlexConnectionManager extends PlexUpnpClass {
     protected $SERVICE='urn:schemas-upnp-org:service:ConnectionManager:1';
-    protected $SERVICEURL='/ConnectionManager/5494da7a-be7b-f642-dbc3-fa922411b037/control.xml';
-    protected $EVENTURL='/ConnectionManager/5494da7a-be7b-f642-dbc3-fa922411b037/event.xml';
+    protected $SERVICEURL='/ConnectionManager/1e9f9d14-f975-765b-bdd8-5e3e8deef9ae/control.xml';
+    protected $EVENTURL='/ConnectionManager/1e9f9d14-f975-765b-bdd8-5e3e8deef9ae/event.xml';
     /***************************************************************************
     /* Funktion : GetCurrentConnectionInfo
     /* 

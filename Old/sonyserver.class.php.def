@@ -1,0 +1,40 @@
+<?
+--------------------------------------------------
+Verwendete Variablen Typen & Anzahl
+   string          : 33
+   ui4             : 7
+   i4              : 4
+   object          : 1
+   int             : 2
+   string|array    : 1
+   string|stringlist|array of strings : 1
+   variant         : 1
+--------------------------------------------------
+Service : ContentDirectory
+--------------------------------------------------
+ GetSearchCapabilities( ) RETURNS SearchCaps(string)
+ GetSortCapabilities( ) RETURNS SortCaps(string)
+ GetSystemUpdateID( ) RETURNS Id(ui4)
+ Browse( ObjectID(string), BrowseFlag(string)=[BrowseMetadata|BrowseDirectChildren], Filter(string), StartingIndex(ui4), RequestedCount(ui4), SortCriteria(string)) RETURNS Result(string), NumberReturned(ui4), TotalMatches(ui4), UpdateID(ui4)
+ X_GetOperationList( ObjectID(string)) RETURNS OperationList(string)
+ X_ExecuteOperation( ObjectID(string), ActionDirective(string)) RETURNS Result(string), UpdateID(ui4)
+--------------------------------------------------
+Service : ConnectionManager
+--------------------------------------------------
+ GetProtocolInfo( ) RETURNS Source(string), Sink(string)
+ GetCurrentConnectionIDs( ) RETURNS ConnectionIDs(string)
+ GetCurrentConnectionInfo( ConnectionID(i4)) RETURNS RcsID(i4), AVTransportID(i4), ProtocolInfo(string), PeerConnectionManager(string), PeerConnectionID(i4), Direction(string)=[Input|Output], Status(string)=[OK|ContentFormatMismatch|InsufficientBandwidth|UnreliableChannel|Unknown]
+--------------------------------------------------
+Service : SonyServerUpnpClass
+--------------------------------------------------
+ __construct( BASE(object), SERVICE(string), SERVICEURL(string), EVENTURL(string))
+ RegisterEventCallback( callback_url(string), timeout(int)=3600) RETURNS SID(string), TIMEOUT(int), Server(string)
+ UnRegisterEventCallback( SID(string))
+--------------------------------------------------
+Service : SonyServerUpnpDevice
+--------------------------------------------------
+ __construct( url(string))
+ Upnp( url(string), SOAP_service(string), SOAP_action(string), SOAP_arguments(string), XML_filter(string)) RETURNS result(string|array)
+ Filter( subject(string), pattern(string|stringlist|array of strings)) RETURNS result(variant)
+
+?>
