@@ -1,11 +1,22 @@
 <?
+//---------------------------------------------------------------------------/
+//	
+//  
+//	Desc     : PHP Classes to Control Dreambox with Enigma2  
+//	Date     : 2015-04-10T01:08:57+02:00
+//	Version  : 1.00.45
+//	Publisher: (c)2015 Xaver Bauer 
+//	Contact  : x.bauer@tier-freunde.net
+//
+//--------------------------------------------------------------------------/
+
 /* Demo
 $c=new EnigmaUpnpDevice('192.168.1.xxx');
 $r=$c->GetServices();
 print_r($r);
 */
 
-class EnigmaUpnpDevice {
+class EnigmaXmlRpcDevice {
 
 	public function __construct($url){
 		$this->url=$url;

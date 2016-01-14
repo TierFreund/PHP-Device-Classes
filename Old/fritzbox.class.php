@@ -1,28 +1,17 @@
 <?
-/*---------------------------------------------------------------------------/
-	
-File:  
-	Desc     : PHP Classes to Control FRITZ!Box Fon WLAN 7390 
-	Date     : 2015-01-30T13:45:47+01:00
-	Version  : 1.00.45
-	Publisher: (c)2015 Xaver Bauer 
-	Contact  : x.bauer@tier-freunde.net
+//---------------------------------------------------------------------------/
+//	
+//  
+//	Desc     : PHP Classes to Control FRITZ!Box Fon WLAN 7390 
+//	Date     : 2015-04-10T01:05:46+02:00
+//	Version  : 1.00.45
+//	Publisher: (c)2015 Xaver Bauer 
+//	Contact  : x.bauer@tier-freunde.net
+//
+//--------------------------------------------------------------------------/
 
-Device:
-	Device Type  : urn:schemas-upnp-org:device:InternetGatewayDevice:1
-	URL 		 : http://fritz.box:49000/igddesc.xml	
-	Friendly Name: gateway
-	Manufacturer : AVM Berlin
-	URL 		 : http://www.avm.de
-	Model        : FRITZ!Box Fon WLAN 7390
-	Name 		 : FRITZ!Box Fon WLAN 7390
-	Number 		 : avm
-	URL 		 : http://www.avm.de
-	Serialnumber : 
-
-/*--------------------------------------------------------------------------*/
 /*##########################################################################/
-/*  Class  : FritzBoxUpnpDevice 
+/*  Class  : FritzboxXmlRpcDevice 
 /*  Desc   : Master Class to Controll Device 
 /*	Vars   :
 /*  protected _SERVICES  : (object) Holder for all Service Classes
@@ -30,7 +19,7 @@ Device:
 /*  protected _IP        : (string) IP Adress from Device
 /*  protected _PORT      : (int)    Port from Device
 /*##########################################################################*/
-class FritzBoxUpnpDevice {
+class FritzboxXmlRpcDevice {
     protected $_SERVICES=null;
     protected $_DEVICES=null;
     protected $_IP='';
@@ -50,10 +39,10 @@ class FritzBoxUpnpDevice {
         $this->_PORT=(isSet($p['port']))?$p['port']:49000;
         $this->_SERVICES=new stdClass();
         $this->_DEVICES=new stdClass();
-        $this->_SERVICES->Any=new FritzBoxAny($this);
-        $this->_DEVICES->WANCommonInterfaceConfig=new FritzBoxWANCommonInterfaceConfig($this);
-        $this->_DEVICES->WANDSLLinkConfig=new FritzBoxWANDSLLinkConfig($this);
-        $this->_DEVICES->WANIPConnection=new FritzBoxWANIPConnection($this);
+        $this->_SERVICES->Any=new FritzboxAny($this);
+        $this->_DEVICES->WANCommonInterfaceConfig=new FritzboxWANCommonInterfaceConfig($this);
+        $this->_DEVICES->WANDSLLinkConfig=new FritzboxWANDSLLinkConfig($this);
+        $this->_DEVICES->WANIPConnection=new FritzboxWANIPConnection($this);
     }
     /***************************************************************************
     /* Funktion : GetIcon
@@ -69,7 +58,7 @@ class FritzBoxUpnpDevice {
     /****************************************************************************/
     function GetIcon($id) {
         switch($id){
-            case 0 : return array('width'=>118,'height'=>119,'url'=>'http://fritz.box:49000/ligd.gif');break;
+            case 0 : return array('width'=>118,'height'=>119,'url'=>$this->GetBaseUrl().'/ligd.gif');break;
         }
         return array('width'=>0,'height'=>0,'url'=>'');
     }
@@ -97,7 +86,7 @@ class FritzBoxUpnpDevice {
     /*    @result (string|array) => The XML Soap Result
     /*
     /****************************************************************************/
-    public function Upnp($url,$SOAP_service,$SOAP_action,$SOAP_arguments = '',$XML_filter = ''){
+    public function Upnp($url,$SOAP_service,$SOAP_action,$SOAP_arguments = '',$XML_filter = '', $ReturnValue=true){
         $POST_xml = '<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">';
         $POST_xml .= '<s:Body>';
         $POST_xml .= '<u:'.$SOAP_action.' xmlns:u="'.$SOAP_service.'">';
@@ -121,7 +110,7 @@ class FritzBoxUpnpDevice {
         if ($XML_filter != '')
             return $this->Filter($r,$XML_filter);
         else
-            return $r;
+            return $r===false?null:$ReturnValue;
     }
     /***************************************************************************
     /* Funktion : Filter
@@ -228,21 +217,21 @@ class FritzBoxUpnpDevice {
     /*
     /****************************************************************************/
     public function __call($FunctionName, $arguments){
-        if(!$p=$this->_ServiceObjectByFunctionName($FunctionName))
+        if(!$p=$this->FunctionExist($FunctionName))
             throw new Exception('Unbekannte Funktion '.$FunctionName.' !!!');
         return $this->CallService($p,$FunctionName, $arguments);
     }
     /***************************************************************************
-    /* Funktion : _ServiceObjectByFunctionName
+    /* Funktion : FunctionExist
     /* 
     /*  Benoetigt:
     /*    @FunctionName (string)
     /*
     /*  Liefert als Ergebnis:
-    /*    @result (function||null) ServiceObject mit der gusuchten Function
+    /*    @result (object||false) ServiceObject mit der gesuchten Funktion
     /*
     /****************************************************************************/
-    private function _ServiceObjectByFunctionName($FunctionName){
+    public function FunctionExist($FunctionName){
         foreach($this->_SERVICES as $fn=>$tmp)if(method_exists($this->_SERVICES->$fn,$FunctionName)){return $this->_SERVICES->$fn;}
         foreach($this->_DEVICES as $fn=>$tmp)if(method_exists($this->_DEVICES->$fn,$FunctionName)){return $this->_DEVICES->$fn;}
         return false;
@@ -281,7 +270,7 @@ class FritzBoxUpnpDevice {
     }
 }
 /*##########################################################################/
-/*  Class  : FritzBoxUpnpClass 
+/*  Class  : FritzboxUpnpClass 
 /*  Desc   : Basis Class for Services
 /*	Vars   :
 /*  protected SERVICE     : (string) Service URN
@@ -289,7 +278,7 @@ class FritzBoxUpnpDevice {
 /*  protected EVENTURL    : (string) Path to Event Control
 /*  protected BASE        : (Object) Points to MasterClass
 /*##########################################################################*/
-class FritzBoxUpnpClass {
+class FritzboxUpnpClass {
     protected $SERVICE="";
     protected $SERVICEURL="";
     protected $EVENTURL="";
@@ -352,7 +341,7 @@ class FritzBoxUpnpClass {
 /*  Service: urn:schemas-any-com:service:Any:1
 /*	     Id: urn:any-com:serviceId:any1 
 /*##########################################################################*/
-class FritzBoxAny extends FritzBoxUpnpClass {
+class FritzboxAny extends FritzboxUpnpClass {
     protected $SERVICE='urn:schemas-any-com:service:Any:1';
     protected $SERVICEURL='/igdupnp/control/any';
     protected $EVENTURL='/igdupnp/control/any';
@@ -363,7 +352,7 @@ class FritzBoxAny extends FritzBoxUpnpClass {
 /*  Service: urn:schemas-upnp-org:service:WANCommonInterfaceConfig:1
 /*	     Id: urn:upnp-org:serviceId:WANCommonIFC1 
 /*##########################################################################*/
-class FritzBoxWANCommonInterfaceConfig extends FritzBoxUpnpClass {
+class FritzboxWANCommonInterfaceConfig extends FritzboxUpnpClass {
     protected $SERVICE='urn:schemas-upnp-org:service:WANCommonInterfaceConfig:1';
     protected $SERVICEURL='/igdupnp/control/WANCommonIFC1';
     protected $EVENTURL='/igdupnp/control/WANCommonIFC1';
@@ -473,7 +462,7 @@ class FritzBoxWANCommonInterfaceConfig extends FritzBoxUpnpClass {
 /*  Service: urn:schemas-upnp-org:service:WANDSLLinkConfig:1
 /*	     Id: urn:upnp-org:serviceId:WANDSLLinkC1 
 /*##########################################################################*/
-class FritzBoxWANDSLLinkConfig extends FritzBoxUpnpClass {
+class FritzboxWANDSLLinkConfig extends FritzboxUpnpClass {
     protected $SERVICE='urn:schemas-upnp-org:service:WANDSLLinkConfig:1';
     protected $SERVICEURL='/igdupnp/control/WANDSLLinkC1';
     protected $EVENTURL='/igdupnp/control/WANDSLLinkC1';
@@ -489,7 +478,7 @@ class FritzBoxWANDSLLinkConfig extends FritzBoxUpnpClass {
     public function SetDSLLinkType($NewLinkType){
         $args="<NewLinkType>$NewLinkType</NewLinkType>";
         $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetDSLLinkType',$args,$filter);
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetDSLLinkType',$args,$filter,$NewLinkType);
     }
     /***************************************************************************
     /* Funktion : GetDSLLinkInfo
@@ -546,7 +535,7 @@ class FritzBoxWANDSLLinkConfig extends FritzBoxUpnpClass {
     public function SetDestinationAddress($NewDestinationAddress){
         $args="<NewDestinationAddress>$NewDestinationAddress</NewDestinationAddress>";
         $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetDestinationAddress',$args,$filter);
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetDestinationAddress',$args,$filter,$NewDestinationAddress);
     }
     /***************************************************************************
     /* Funktion : GetDestinationAddress
@@ -574,7 +563,7 @@ class FritzBoxWANDSLLinkConfig extends FritzBoxUpnpClass {
     public function SetATMEncapsulation($NewATMEncapsulation){
         $args="<NewATMEncapsulation>$NewATMEncapsulation</NewATMEncapsulation>";
         $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetATMEncapsulation',$args,$filter);
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetATMEncapsulation',$args,$filter,$NewATMEncapsulation);
     }
     /***************************************************************************
     /* Funktion : GetATMEncapsulation
@@ -602,7 +591,7 @@ class FritzBoxWANDSLLinkConfig extends FritzBoxUpnpClass {
     public function SetFCSPreserved($NewFCSPreserved){
         $args="<NewFCSPreserved>$NewFCSPreserved</NewFCSPreserved>";
         $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetFCSPreserved',$args,$filter);
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetFCSPreserved',$args,$filter,$NewFCSPreserved);
     }
     /***************************************************************************
     /* Funktion : GetFCSPreserved
@@ -624,7 +613,7 @@ class FritzBoxWANDSLLinkConfig extends FritzBoxUpnpClass {
 /*  Service: urn:schemas-upnp-org:service:WANIPConnection:1
 /*	     Id: urn:upnp-org:serviceId:WANIPConn1 
 /*##########################################################################*/
-class FritzBoxWANIPConnection extends FritzBoxUpnpClass {
+class FritzboxWANIPConnection extends FritzboxUpnpClass {
     protected $SERVICE='urn:schemas-upnp-org:service:WANIPConnection:1';
     protected $SERVICEURL='/igdupnp/control/WANIPConn1';
     protected $EVENTURL='/igdupnp/control/WANIPConn1';
@@ -640,7 +629,7 @@ class FritzBoxWANIPConnection extends FritzBoxUpnpClass {
     public function SetConnectionType($NewConnectionType){
         $args="<NewConnectionType>$NewConnectionType</NewConnectionType>";
         $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetConnectionType',$args,$filter);
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetConnectionType',$args,$filter,$NewConnectionType);
     }
     /***************************************************************************
     /* Funktion : GetConnectionTypeInfo

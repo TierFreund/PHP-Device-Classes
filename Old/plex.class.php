@@ -1,4 +1,5 @@
 <?
+<<<<<<< HEAD:Old/plex.class.php
 /*---------------------------------------------------------------------------/
 	
 File:  
@@ -22,8 +23,21 @@ Device:
 	UDN          : uuid:1e9f9d14-f975-765b-bdd8-5e3e8deef9ae
 
 /*--------------------------------------------------------------------------*/
+=======
+//---------------------------------------------------------------------------/
+//	
+//  
+//	Desc     : PHP Classes to Control Plex Media Server 
+//	Date     : 2015-04-10T01:05:46+02:00
+//	Version  : 1.00.45
+//	Publisher: (c)2015 Xaver Bauer 
+//	Contact  : x.bauer@tier-freunde.net
+//
+//--------------------------------------------------------------------------/
+
+>>>>>>> origin/master:plex.class.php
 /*##########################################################################/
-/*  Class  : PlexUpnpDevice 
+/*  Class  : PlexXmlRpcDevice 
 /*  Desc   : Master Class to Controll Device 
 /*	Vars   :
 /*  protected _SERVICES  : (object) Holder for all Service Classes
@@ -31,7 +45,7 @@ Device:
 /*  protected _IP        : (string) IP Adress from Device
 /*  protected _PORT      : (int)    Port from Device
 /*##########################################################################*/
-class PlexUpnpDevice {
+class PlexXmlRpcDevice {
     protected $_SERVICES=null;
     protected $_DEVICES=null;
     protected $_IP='';
@@ -69,12 +83,21 @@ class PlexUpnpDevice {
     /****************************************************************************/
     function GetIcon($id) {
         switch($id){
+<<<<<<< HEAD:Old/plex.class.php
             case 0 : return array('width'=>260,'height'=>260,'url'=>'http://192.168.112.1:32469/proxy/027d672c6a70ab72aa7c/260x260.png');break;
             case 1 : return array('width'=>120,'height'=>120,'url'=>'http://192.168.112.1:32469/proxy/74b2fce849107951c424/120x120.png');break;
             case 2 : return array('width'=>48,'height'=>48,'url'=>'http://192.168.112.1:32469/proxy/23b1739a6c33d02bf0ba/48x48.png');break;
             case 3 : return array('width'=>260,'height'=>260,'url'=>'http://192.168.112.1:32469/proxy/e2ba69ed701bbef38438/260x260.jpg');break;
             case 4 : return array('width'=>120,'height'=>120,'url'=>'http://192.168.112.1:32469/proxy/ae306aa36533cd3e14b4/120x120.jpg');break;
             case 5 : return array('width'=>48,'height'=>48,'url'=>'http://192.168.112.1:32469/proxy/f5095c764513b3c19c6b/48x48.jpg');break;
+=======
+            case 0 : return array('width'=>260,'height'=>260,'url'=>$this->GetBaseUrl().'/proxy/027d672c6a70ab72aa7c/260x260.png');break;
+            case 1 : return array('width'=>120,'height'=>120,'url'=>$this->GetBaseUrl().'/proxy/74b2fce849107951c424/120x120.png');break;
+            case 2 : return array('width'=>48,'height'=>48,'url'=>$this->GetBaseUrl().'/proxy/23b1739a6c33d02bf0ba/48x48.png');break;
+            case 3 : return array('width'=>260,'height'=>260,'url'=>$this->GetBaseUrl().'/proxy/e2ba69ed701bbef38438/260x260.jpg');break;
+            case 4 : return array('width'=>120,'height'=>120,'url'=>$this->GetBaseUrl().'/proxy/ae306aa36533cd3e14b4/120x120.jpg');break;
+            case 5 : return array('width'=>48,'height'=>48,'url'=>$this->GetBaseUrl().'/proxy/f5095c764513b3c19c6b/48x48.jpg');break;
+>>>>>>> origin/master:plex.class.php
         }
         return array('width'=>0,'height'=>0,'url'=>'');
     }
@@ -102,7 +125,7 @@ class PlexUpnpDevice {
     /*    @result (string|array) => The XML Soap Result
     /*
     /****************************************************************************/
-    public function Upnp($url,$SOAP_service,$SOAP_action,$SOAP_arguments = '',$XML_filter = ''){
+    public function Upnp($url,$SOAP_service,$SOAP_action,$SOAP_arguments = '',$XML_filter = '', $ReturnValue=true){
         $POST_xml = '<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">';
         $POST_xml .= '<s:Body>';
         $POST_xml .= '<u:'.$SOAP_action.' xmlns:u="'.$SOAP_service.'">';
@@ -126,7 +149,7 @@ class PlexUpnpDevice {
         if ($XML_filter != '')
             return $this->Filter($r,$XML_filter);
         else
-            return $r;
+            return $r===false?null:$ReturnValue;
     }
     /***************************************************************************
     /* Funktion : Filter
@@ -231,21 +254,21 @@ class PlexUpnpDevice {
     /*
     /****************************************************************************/
     public function __call($FunctionName, $arguments){
-        if(!$p=$this->_ServiceObjectByFunctionName($FunctionName))
+        if(!$p=$this->FunctionExist($FunctionName))
             throw new Exception('Unbekannte Funktion '.$FunctionName.' !!!');
         return $this->CallService($p,$FunctionName, $arguments);
     }
     /***************************************************************************
-    /* Funktion : _ServiceObjectByFunctionName
+    /* Funktion : FunctionExist
     /* 
     /*  Benoetigt:
     /*    @FunctionName (string)
     /*
     /*  Liefert als Ergebnis:
-    /*    @result (function||null) ServiceObject mit der gusuchten Function
+    /*    @result (object||false) ServiceObject mit der gesuchten Funktion
     /*
     /****************************************************************************/
-    private function _ServiceObjectByFunctionName($FunctionName){
+    public function FunctionExist($FunctionName){
         foreach($this->_SERVICES as $fn=>$tmp)if(method_exists($this->_SERVICES->$fn,$FunctionName)){return $this->_SERVICES->$fn;}
         foreach($this->_DEVICES as $fn=>$tmp)if(method_exists($this->_DEVICES->$fn,$FunctionName)){return $this->_DEVICES->$fn;}
         return false;
