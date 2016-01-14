@@ -1,29 +1,74 @@
 <?
-/*---------------------------------------------------------------------------/
-	
-File:  
-	Desc     : PHP Classes to Control Samsung TV DMR 
-	Date     : 2015-03-22T22:26:34+01:00
-	Version  : 1.00.45
-	Publisher: (c)2015 Xaver Bauer 
-	Contact  : x.bauer@tier-freunde.net
+if(!function_exists('array_value')){
+	function array_value($array, $key ){
+		foreach($array as $k=>$v){
+			if($k==$key) return $v;
+			if(is_array($v)) return array_value($v,$key);
+		}
+		return false;	
+	}    
+}	
+if(!function_exists('unserialize_xml')){
+	function unserialize_xml($input, $callback = null, $noAttributes=false, $recurse = false){
+		$data = ((!$recurse) && is_string($input))? simplexml_load_string($input): $input;
+		if ($data instanceof SimpleXMLElement) $data = (array) $data;
+		if (is_array($data)) foreach ($data as $k=>&$item){
+			if($noAttributes&&$k=='@attributes'){unset($data[$k]);continue;}
+			$item = unserialize_xml($item, $callback, $noAttributes, true);
+		}
+		return (!is_array($data) && is_callable($callback))? call_user_func($callback, $data): $data;
+	}
+}
+if(!function_exists('Filter')){
+   function Filter($subject,$pattern){
+        $multi=is_array($pattern);
+        if(!$multi){
+            $pattern=explode(',',$pattern);
+            $multi=(count($pattern)>1);
+        }	
+        foreach($pattern as $pat){
+            if(!$pat)continue;
+            preg_match('/\<'.$pat.'\>(.+)\<\/'.$pat.'\>/',$subject,$matches);
+            if($multi)$n[$pat]=(isSet($matches[1]))?$matches[1]:false;
+            else return (isSet($matches[1]))?$matches[1]:false;
+        }	
+        return $n;
+    }
+} 
+if(!function_exists('xmlrpc_device_request')){
+	function xmlrpc_device_request($ControlURL,$SOAP_service, $SOAP_action, $SOAP_arguments = '',$XML_filter = '', $ReturnValue=true ,$ip,$port){
+		$header = "POST $ControlURL HTTP/1.1\r\nHOST: $ip:$port\r\nCONTENT-TYPE: text/xml; charset='utf-8'\r\nSOAPACTION: \"$SOAP_service#$SOAP_action\"\r\nCONNECTION: close";
+		$xml = '<?xml version="1.0" encoding="utf-8"?><s:Envelope s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" xmlns:s="http://schemas.xmlsoap.org/soap/envelope/"><s:Body><u:'.$SOAP_action.' xmlns:u="'.$SOAP_service.'">'.$SOAP_arguments.'</u:'.$SOAP_action.'></s:Body></s:Envelope>';
+		$content = $header . "\r\nCONTENT-LENGTH: ".strlen($xml) ."\r\n\r\n$xml";
+		$fp = fsockopen($ip, $port, $errno, $errstr, 5);
+		if (!$fp)return null;
+		fputs ($fp, $content);
+		$buffer = stream_get_contents($fp, -1);
+		fclose($fp);
+		if(strpos($buffer, "200 OK") === false){
+			return null;
+		}
+		//Header abtrennen
+		list($header,$message)=explode("\r\n\r\n", $buffer);
+		$xml=null;
+        if ($XML_filter != '')return Filter($message,$XML_filter);
+//echo "Error: $ReturnValue";
+		return $ReturnValue;
+	}
+}
+//---------------------------------------------------------------------------/
+//	
+//  
+//	Desc     : PHP Classes to Control Samsung TV DMR 
+//	Date     : 2015-04-10T01:05:45+02:00
+//	Version  : 1.00.45
+//	Publisher: (c)2015 Xaver Bauer 
+//	Contact  : x.bauer@tier-freunde.net
+//
+//--------------------------------------------------------------------------/
 
-Device:
-	Device Type  : urn:schemas-upnp-org:device:MediaRenderer:1
-	URL 		 : http://192.168.112.60:7676/smp_16_	
-	Friendly Name: [TV] Samsung
-	Manufacturer : Samsung Electronics
-	URL 		 : http://www.samsung.com/sec
-	Model        : Samsung TV DMR
-	Name 		 : UE55F6400
-	Number 		 : AllShare1.0
-	URL 		 : http://www.samsung.com/sec
-	Serialnumber : 20110517DMR
-	UDN          : uuid:0ee6b280-00fa-1000-b849-0c891041f72d
-
-/*--------------------------------------------------------------------------*/
 /*##########################################################################/
-/*  Class  : SamsungUpnpDevice 
+/*  Class  : SamsungXmlRpcDevice 
 /*  Desc   : Master Class to Controll Device 
 /*	Vars   :
 /*  protected _SERVICES  : (object) Holder for all Service Classes
@@ -31,7 +76,7 @@ Device:
 /*  protected _IP        : (string) IP Adress from Device
 /*  protected _PORT      : (int)    Port from Device
 /*##########################################################################*/
-class SamsungUpnpDevice {
+class SamsungXmlRpcDevice {
     protected $_SERVICES=null;
     protected $_DEVICES=null;
     protected $_IP='';
@@ -69,10 +114,10 @@ class SamsungUpnpDevice {
     /****************************************************************************/
     function GetIcon($id) {
         switch($id){
-            case 0 : return array('width'=>48,'height'=>48,'url'=>'http://192.168.112.60:7676/dmr/icon_SML.jpg');break;
-            case 1 : return array('width'=>120,'height'=>120,'url'=>'http://192.168.112.60:7676/dmr/icon_LRG.jpg');break;
-            case 2 : return array('width'=>48,'height'=>48,'url'=>'http://192.168.112.60:7676/dmr/icon_SML.png');break;
-            case 3 : return array('width'=>120,'height'=>120,'url'=>'http://192.168.112.60:7676/dmr/icon_LRG.png');break;
+            case 0 : return array('width'=>48,'height'=>48,'url'=>$this->GetBaseUrl().'/dmr/icon_SML.jpg');break;
+            case 1 : return array('width'=>120,'height'=>120,'url'=>$this->GetBaseUrl().'/dmr/icon_LRG.jpg');break;
+            case 2 : return array('width'=>48,'height'=>48,'url'=>$this->GetBaseUrl().'/dmr/icon_SML.png');break;
+            case 3 : return array('width'=>120,'height'=>120,'url'=>$this->GetBaseUrl().'/dmr/icon_LRG.png');break;
         }
         return array('width'=>0,'height'=>0,'url'=>'');
     }
@@ -100,31 +145,8 @@ class SamsungUpnpDevice {
     /*    @result (string|array) => The XML Soap Result
     /*
     /****************************************************************************/
-    public function Upnp($url,$SOAP_service,$SOAP_action,$SOAP_arguments = '',$XML_filter = ''){
-        $POST_xml = '<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">';
-        $POST_xml .= '<s:Body>';
-        $POST_xml .= '<u:'.$SOAP_action.' xmlns:u="'.$SOAP_service.'">';
-        $POST_xml .= $SOAP_arguments;
-        $POST_xml .= '</u:'.$SOAP_action.'>';
-        $POST_xml .= '</s:Body>';
-        $POST_xml .= '</s:Envelope>';
-        $POST_url = $this->_IP.":".$this->_PORT.$url;
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
-        curl_setopt($ch, CURLOPT_URL, $POST_url);
-        curl_setopt($ch, CURLOPT_HEADER, 0);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array("Content-Type: text/xml", "SOAPAction: ".$SOAP_service."#".$SOAP_action));
-        curl_setopt($ch, CURLOPT_POST, 1);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $POST_xml);
-        $r = curl_exec($ch);
-        curl_close($ch);
-        if ($XML_filter != '')
-            return $this->Filter($r,$XML_filter);
-        else
-            return $r;
+    public function Upnp($url,$SOAP_service,$SOAP_action,$SOAP_arguments = '',$XML_filter = '', $ReturnValue=true){
+		return xmlrpc_device_request($url,$SOAP_service,$SOAP_action,$SOAP_arguments,$XML_filter,$ReturnValue,$this->_IP,$this->_PORT);
     }
     /***************************************************************************
     /* Funktion : Filter
@@ -228,21 +250,21 @@ class SamsungUpnpDevice {
     /*
     /****************************************************************************/
     public function __call($FunctionName, $arguments){
-        if(!$p=$this->_ServiceObjectByFunctionName($FunctionName))
+        if(!$p=$this->FunctionExist($FunctionName))
             throw new Exception('Unbekannte Funktion '.$FunctionName.' !!!');
         return $this->CallService($p,$FunctionName, $arguments);
     }
     /***************************************************************************
-    /* Funktion : _ServiceObjectByFunctionName
+    /* Funktion : FunctionExist
     /* 
     /*  Benoetigt:
     /*    @FunctionName (string)
     /*
     /*  Liefert als Ergebnis:
-    /*    @result (function||null) ServiceObject mit der gusuchten Function
+    /*    @result (object||false) ServiceObject mit der gesuchten Funktion
     /*
     /****************************************************************************/
-    private function _ServiceObjectByFunctionName($FunctionName){
+    public function FunctionExist($FunctionName){
         foreach($this->_SERVICES as $fn=>$tmp)if(method_exists($this->_SERVICES->$fn,$FunctionName)){return $this->_SERVICES->$fn;}
         foreach($this->_DEVICES as $fn=>$tmp)if(method_exists($this->_DEVICES->$fn,$FunctionName)){return $this->_DEVICES->$fn;}
         return false;
@@ -343,7 +365,7 @@ class SamsungUpnpClass {
     /****************************************************************************/
     public function UnRegisterEventCallback($SID){ 
         if(!$this->EVENTURL)return false;	
-        $content="UNSUBSCRIBE {$this->EVENTURL} HTTP/1.1\nHOST: ".$this->BASE->GetBaseUrl()."\nSID: $SID\nContent-Length: 0\n\n";
+        $content="UNSUBSCRIBE {$this->EVENTURL} HTTP/1.1\r\nHOST: ".$this->BASE->GetBaseUrl()."\r\nSID: $SID\nContent-Length: 0\r\n\r\n";
         return $this->BASE->sendPacket($content);
     }
 }
@@ -416,7 +438,7 @@ class SamsungRenderingControl extends SamsungUpnpClass {
     public function SetMute($DesiredMute, $InstanceID=0, $Channel='Master'){
         $args="<InstanceID>$InstanceID</InstanceID><Channel>$Channel</Channel><DesiredMute>$DesiredMute</DesiredMute>";
         $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetMute',$args,$filter);
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetMute',$args,$filter,$DesiredMute);
     }
     /***************************************************************************
     /* Funktion : GetVolume
@@ -448,7 +470,7 @@ class SamsungRenderingControl extends SamsungUpnpClass {
     public function SetVolume($DesiredVolume, $InstanceID=0, $Channel='Master'){
         $args="<InstanceID>$InstanceID</InstanceID><Channel>$Channel</Channel><DesiredVolume>$DesiredVolume</DesiredVolume>";
         $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetVolume',$args,$filter);
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetVolume',$args,$filter,$DesiredVolume);
     }
     /***************************************************************************
     /* Funktion : GetBrightness
@@ -478,7 +500,7 @@ class SamsungRenderingControl extends SamsungUpnpClass {
     public function SetBrightness($DesiredBrightness, $InstanceID=0){
         $args="<InstanceID>$InstanceID</InstanceID><DesiredBrightness>$DesiredBrightness</DesiredBrightness>";
         $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetBrightness',$args,$filter);
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetBrightness',$args,$filter,$DesiredBrightness);
     }
     /***************************************************************************
     /* Funktion : GetContrast
@@ -508,7 +530,7 @@ class SamsungRenderingControl extends SamsungUpnpClass {
     public function SetContrast($DesiredContrast, $InstanceID=0){
         $args="<InstanceID>$InstanceID</InstanceID><DesiredContrast>$DesiredContrast</DesiredContrast>";
         $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetContrast',$args,$filter);
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetContrast',$args,$filter,$DesiredContrast);
     }
     /***************************************************************************
     /* Funktion : GetSharpness
@@ -538,7 +560,7 @@ class SamsungRenderingControl extends SamsungUpnpClass {
     public function SetSharpness($DesiredSharpness, $InstanceID=0){
         $args="<InstanceID>$InstanceID</InstanceID><DesiredSharpness>$DesiredSharpness</DesiredSharpness>";
         $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetSharpness',$args,$filter);
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetSharpness',$args,$filter,$DesiredSharpness);
     }
     /***************************************************************************
     /* Funktion : X_UpdateAudioSelection
@@ -778,7 +800,7 @@ class SamsungAVTransport extends SamsungUpnpClass {
     public function SetPlayMode($NewPlayMode, $InstanceID=0){
         $args="<InstanceID>$InstanceID</InstanceID><NewPlayMode>$NewPlayMode</NewPlayMode>";
         $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetPlayMode',$args,$filter);
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetPlayMode',$args,$filter,$NewPlayMode);
     }
     /***************************************************************************
     /* Funktion : GetMediaInfo
@@ -834,7 +856,7 @@ class SamsungAVTransport extends SamsungUpnpClass {
     public function SetAVTransportURI($CurrentURI, $CurrentURIMetaData, $InstanceID=0){
         $args="<InstanceID>$InstanceID</InstanceID><CurrentURI>$CurrentURI</CurrentURI><CurrentURIMetaData>$CurrentURIMetaData</CurrentURIMetaData>";
         $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetAVTransportURI',$args,$filter);
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetAVTransportURI',$args,$filter,$CurrentURI);
     }
     /***************************************************************************
     /* Funktion : SetNextAVTransportURI
@@ -850,7 +872,7 @@ class SamsungAVTransport extends SamsungUpnpClass {
     public function SetNextAVTransportURI($NextURI, $NextURIMetaData, $InstanceID=0){
         $args="<InstanceID>$InstanceID</InstanceID><NextURI>$NextURI</NextURI><NextURIMetaData>$NextURIMetaData</NextURIMetaData>";
         $filter="";
-        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetNextAVTransportURI',$args,$filter);
+        return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'SetNextAVTransportURI',$args,$filter,$NextURI);
     }
     /***************************************************************************
     /* Funktion : GetTransportSettings
@@ -1015,5 +1037,6 @@ class SamsungAVTransport extends SamsungUpnpClass {
         $filter="";
         return $this->BASE->Upnp($this->SERVICEURL,$this->SERVICE,'X_SetSlideShowEffectHint',$args,$filter);
     }}
+
 
 ?>

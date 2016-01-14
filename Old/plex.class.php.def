@@ -36,7 +36,7 @@ Service : PlexUpnpClass
  RegisterEventCallback( callback_url(string), timeout(int)=3600) RETURNS SID(string), TIMEOUT(int), Server(string)
  UnRegisterEventCallback( SID(string))
 --------------------------------------------------
-Service : PlexUpnpDevice
+Service : PlexXmlRpcDevice
 --------------------------------------------------
  __construct( url(string))
  Upnp( url(string), SOAP_service(string), SOAP_action(string), SOAP_arguments(string), XML_filter(string)) RETURNS result(string|array)
